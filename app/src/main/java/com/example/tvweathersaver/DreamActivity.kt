@@ -1,6 +1,7 @@
 package com.example.tvweathersaver
 
 import android.annotation.SuppressLint
+import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.service.dreams.DreamService
@@ -53,14 +54,32 @@ class DreamActivity : DreamService() {
         }
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         handler.postDelayed(runnable,100)
-        val gd = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(0x000000, 0xFFFFFF)
-        )
-        gd.cornerRadius = 0f
-        layout.setBackgroundDrawable(gd);
+        layout.setBackgroundDrawable(calculateBackgroundGradient());
         // Start playback, etc
     }
 
+    private fun calculateBackgroundGradient(): GradientDrawable {
+        val darkFactor = 1 - ((Date().hours + 17)%24)/25f
+        val startColor = darkenColor(-0xEBA286, darkFactor)
+        val endColor = darkenColor(-0x9C5336, darkFactor)
+        val gd = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(startColor, endColor)
+        )
+        gd.cornerRadius = 0f
+        return gd
+    }
+    private fun darkenColor(color: Int, factor: Float): Int {
+        val a: Int = Color.alpha(color)
+        val r = Math.round(Color.red(color) * factor).toInt()
+        val g = Math.round(Color.green(color) * factor).toInt()
+        val b = Math.round(Color.blue(color) * factor).toInt()
+        return Color.argb(
+            a,
+            Math.min(r, 255),
+            Math.min(g, 255),
+            Math.min(b, 255)
+        )
+    }
     private fun formatTime(value: Int) : String {
         if(value < 10)
             return "0$value"
