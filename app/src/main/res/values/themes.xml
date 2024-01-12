@@ -1,0 +1,4 @@
+<resources>
+
+    <style name="Theme.TVWeatherSaver" parent="Theme.AppCompat.DayNight.NoActionBar" />
+</resources>
