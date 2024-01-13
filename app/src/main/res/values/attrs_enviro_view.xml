@@ -1,0 +1,10 @@
+<resources>
+    <declare-styleable name="EnviroModuleView">
+        <attr name="name" format="string" />
+        <attr name="icon" format="reference" />
+        <attr name="limitLow" format="integer" />
+        <attr name="limitUp" format="integer" />
+        <attr name="value" format="float" />
+        <attr name="unit" format="string" />
+    </declare-styleable>
+</resources>
