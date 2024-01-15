@@ -1,18 +1,29 @@
 package com.example.tvweathersaver
 
+import android.R.drawable
 import android.annotation.SuppressLint
-import android.graphics.Color
+import android.graphics.Point
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.service.dreams.DreamService
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
 import android.widget.TextView
+import androidx.compose.ui.graphics.Color
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.graphics.alpha
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
 import java.util.Date
+
+
+private const val startColor = 0x87CEEB;
+private const val endColor = 0x377E9B;
 
 
 class DreamActivity : DreamService() {
@@ -25,11 +36,6 @@ class DreamActivity : DreamService() {
         isFullscreen = true
         isInteractive = true
         setContentView(R.layout.weather_view)
-//        val mSunriseSunsetView = findViewById<View>(R.id.ssv) as SunriseSunsetView
-//        mSunriseSunsetView.setSunriseTime(Time(9, 30))
-//        mSunriseSunsetView.setSunsetTime(Time(18, 40))
-//        mSunriseSunsetView.startAnimate()
-        //findViewById<WeatherView>(R.id.weather_view).speed = 255
     }
 
     override fun onDreamingStarted() {
@@ -39,46 +45,92 @@ class DreamActivity : DreamService() {
         findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.RAIN)
         findViewById<WeatherView>(R.id.weather_view).emissionRate = 150.0f
         val handler = Handler()
-        val runnable = object : Runnable {
+        var enviroRunnable: Runnable? = null
+        val timeRunnable = object : Runnable {
+            var count = 0;
             override fun run () {
                 handler.removeCallbacksAndMessages(null)
-                val txtCurrentTime = findViewById<View>(R.id.time) as TextView
-                val dt = Date()
-                val hours = formatTime(dt.hours)
-                val minutes = formatTime(dt.minutes)
-                val seconds = formatTime(dt.seconds)
-                val curTime = "$hours:$minutes:$seconds"
-                txtCurrentTime.text = curTime
+                updateTime()
+                if(count % 100 == 0) {
+                    enviroRunnable?.let { handler.postDelayed(it, 100) }
+                    count = 0;
+                }
+                count++;
                 handler.postDelayed(this, 100)
             }
         }
+        enviroRunnable = object : Runnable {
+            override fun run() {
+                handler.removeCallbacksAndMessages(null)
+                updateEnviroViews(findViewById<ConstraintLayout>(R.id.dream_layout))
+                handler.postDelayed(timeRunnable, 100)
+            }
+        }
+        handler.postDelayed(timeRunnable,100)
+        handler.postDelayed(enviroRunnable, 100)
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
-        handler.postDelayed(runnable,100)
         layout.setBackgroundDrawable(calculateBackgroundGradient());
+
+//      // layout.addView(testEnviroView)
         // Start playback, etc
     }
 
+    private fun updateEnviroViews(layout: ConstraintLayout) {
+        val response = HttpClient.get(
+            applicationContext.getString(R.string.enviro_backend_url))
+        var height = layout.measuredHeight - 1100;
+        var width = layout.measuredWidth - 1890;
+        for(key in response!!.keys()) {
+            if(key != "datetime") {
+                val obj = response.getJSONObject(key);
+                val value = obj.getDouble("value")
+                val unit = obj.getString("unit")
+                val limits = obj.getJSONArray("limits")
+                if(layout.getViewById(key.hashCode()) == null) {
+                    val drawableId = applicationContext.resources.getIdentifier(key, "drawable", "com.example.tvweathersaver");
+                    val enviroView = EnviroModuleView(applicationContext,
+                        drawableId, key,
+                        Pair<Int, Int>(limits.getInt(0), limits.getInt(1)), value.toFloat(), unit, Point(width, height), Color(darkenColor(startColor, 0.2f))
+                    )
+                    enviroView.id = key.hashCode()
+                    enviroView.layoutParams = ConstraintLayout.LayoutParams(
+                        ConstraintLayout.LayoutParams.MATCH_PARENT,
+                        ConstraintLayout.LayoutParams.MATCH_PARENT)
+                    layout.addView(enviroView);
+                } else {
+                    val existsView = layout.getViewById(key.hashCode()) as? EnviroModuleView
+                    existsView?.updateView(value.toFloat())
+                }
+                layout.invalidate()
+            }
+            height += 60
+        }
+    }
+    private fun updateTime() {
+        val txtCurrentTime = findViewById<View>(R.id.time) as TextView
+        val dt = Date()
+        val hours = formatTime(dt.hours)
+        val minutes = formatTime(dt.minutes)
+        val seconds = formatTime(dt.seconds)
+        val curTime = "$hours:$minutes:$seconds"
+        txtCurrentTime.text = curTime
+    }
     private fun calculateBackgroundGradient(): GradientDrawable {
-        val darkFactor = 1 - ((Date().hours + 17)%24)/25f
-        val startColor = darkenColor(-0xEBA286, darkFactor)
-        val endColor = darkenColor(-0x9C5336, darkFactor)
+        val darkFactor = 1 - ((Date().hours + 17)%24)/24f
         val gd = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(startColor, endColor)
+            GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
+                darkenColor(startColor, darkFactor),
+                darkenColor(startColor, darkFactor))
         )
         gd.cornerRadius = 0f
         return gd
     }
     private fun darkenColor(color: Int, factor: Float): Int {
-        val a: Int = Color.alpha(color)
-        val r = Math.round(Color.red(color) * factor).toInt()
-        val g = Math.round(Color.green(color) * factor).toInt()
-        val b = Math.round(Color.blue(color) * factor).toInt()
-        return Color.argb(
-            a,
-            Math.min(r, 255),
-            Math.min(g, 255),
-            Math.min(b, 255)
-        )
+        val a: Int = color.alpha
+        val r = Math.round(color.red * factor).toInt()
+        val g = Math.round(color.green * factor).toInt()
+        val b = Math.round(color.blue * factor).toInt()
+        return Color(a, r, g, b).hashCode()
     }
     private fun formatTime(value: Int) : String {
         if(value < 10)
