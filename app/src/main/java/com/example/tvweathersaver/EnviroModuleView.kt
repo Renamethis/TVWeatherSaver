@@ -6,7 +6,6 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Point
 import android.graphics.drawable.Drawable
@@ -17,8 +16,12 @@ import android.view.View
 import androidx.core.content.res.getResourceIdOrThrow
 import org.json.JSONObject
 import android.graphics.Rect
+import android.graphics.RectF
+import androidx.compose.ui.graphics.Color
 import androidx.core.content.res.getFloatOrThrow
 import androidx.core.content.res.getIntOrThrow
+
+private const val imgSize: Int = 48;
 
 class EnviroModuleView : View {
     private var point: Point? = null
@@ -27,8 +30,13 @@ class EnviroModuleView : View {
     private var limits: Pair<Int, Int>? = null;
     private var value: Float? = null;
     private var unit: String? = null;
+    private var color: Color? = null;
     private val textPaint: Paint = Paint();
 
+    public fun updateView(value: Float) {
+        this.value = value
+        invalidate()
+    }
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
         init(attrs, 0)
     }
@@ -42,7 +50,7 @@ class EnviroModuleView : View {
     }
     constructor(context: Context, iconResource: Int, name: String,
                 limits:Pair<Int, Int>, value: Float, unit: String,
-                point: Point) : super(context) {
+                point: Point, color: Color) : super(context) {
         init()
         icon = BitmapFactory.decodeResource(context.getResources(), iconResource);
         this.name = name
@@ -50,6 +58,7 @@ class EnviroModuleView : View {
         this.value = value
         this.unit = unit
         this.point = point
+        this.color = color
     }
     private fun init(attrs: AttributeSet?, defStyle: Int) {
         val parsedAttributes = context.obtainStyledAttributes(
@@ -71,21 +80,31 @@ class EnviroModuleView : View {
         init()
     }
     private fun init() {
-        textPaint.color = Color.WHITE
+        textPaint.color = Color.White.hashCode()
         textPaint.style = Paint.Style.FILL
-        textPaint.textSize = 25f
+        textPaint.textSize = 22f
     }
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         point ?: return
         icon ?: return
-
-        canvas.drawBitmap(icon!!, null,
-                          Rect(point!!.x, point!!.y,
-                              point!!.x + 64,
-                              point!!.y + 64),
-                    null)
-        canvas.drawText("$name $value $unit", 0f, 0f, textPaint)
+        val x = point!!.x.toFloat(); y = point!!.y.toFloat();
+        val rectBox = RectF(
+            x - imgSize*3/8f,  y - imgSize*3/8f,
+            x + imgSize*11/8,
+            y + imgSize*11/8
+        );
+        val backgroundPaint = Paint()
+        backgroundPaint.color = this.color.hashCode()
+        backgroundPaint.alpha = 128
+        canvas.drawRoundRect(rectBox, imgSize*1.5f, imgSize*1.5f, backgroundPaint)
+        rectBox.left = x
+        rectBox.top = y
+        rectBox.right = x + imgSize
+        rectBox.bottom = y + imgSize
+        canvas.drawBitmap(icon!!, null, rectBox, null)
+        canvas.drawText("$name $value $unit",
+            (point!!.x - imgSize/2).toFloat(), (point!!.y - imgSize/2).toFloat(), textPaint)
         super.onDraw(canvas)
     }
 }
