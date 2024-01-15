@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">TVWeatherSaver</string>
+    <string name="enviro_backend_url">http://192.168.1.111:5000/get_current_state</string>
 </resources>
