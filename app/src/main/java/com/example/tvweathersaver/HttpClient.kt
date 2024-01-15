@@ -1,5 +1,7 @@
 package com.example.tvweathersaver
 
+import android.os.StrictMode
+import android.os.StrictMode.ThreadPolicy
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.DataInputStream
@@ -8,8 +10,8 @@ import java.io.InputStream
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+
 
 private fun readDataFromStream(responseCode: Int, inputStream: InputStream): JSONObject? {
     if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_CREATED) {
@@ -26,17 +28,19 @@ private fun readDataFromStream(responseCode: Int, inputStream: InputStream): JSO
 
 class HttpClient {
     companion object {
-        @JvmStatic
-        fun get(stringUrl: String, query: Array<Pair<String, String>>?): JSONObject? {
+        fun get(stringUrl: String): JSONObject? {
+            val policy = ThreadPolicy.Builder().permitAll().build()
+            StrictMode.setThreadPolicy(policy)
             val url = URL(stringUrl);
-            with(url.openConnection() as HttpURLConnection) {
-                requestMethod = "GET"
-                setRequestProperty("charset", "utf-8")
-                return readDataFromStream(responseCode, inputStream);
-            }
+            return JSONObject(url.readText())
+//            with(url.openConnection() as HttpURLConnection) {
+//                val policy = ThreadPolicy.Builder().permitAll().build()
+//                StrictMode.setThreadPolicy(policy)
+//                requestMethod = "GET"
+//                setRequestProperty("charset", "utf-8")
+//                return readDataFromStream(responseCode, inputStream);
+//            }
         }
-
-        @JvmStatic
         fun post(stringUrl: String, body: JSONObject): JSONObject? {
             val url = URL(stringUrl);
             val byteBody: ByteArray = body.toString().toByteArray(StandardCharsets.UTF_8)
