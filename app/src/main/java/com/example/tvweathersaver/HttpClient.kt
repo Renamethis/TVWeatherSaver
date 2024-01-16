@@ -29,17 +29,14 @@ private fun readDataFromStream(responseCode: Int, inputStream: InputStream): JSO
 class HttpClient {
     companion object {
         fun get(stringUrl: String): JSONObject? {
-            val policy = ThreadPolicy.Builder().permitAll().build()
-            StrictMode.setThreadPolicy(policy)
             val url = URL(stringUrl);
-            return JSONObject(url.readText())
-//            with(url.openConnection() as HttpURLConnection) {
-//                val policy = ThreadPolicy.Builder().permitAll().build()
-//                StrictMode.setThreadPolicy(policy)
-//                requestMethod = "GET"
-//                setRequestProperty("charset", "utf-8")
-//                return readDataFromStream(responseCode, inputStream);
-//            }
+            with(url.openConnection() as HttpURLConnection) {
+                val policy = ThreadPolicy.Builder().permitAll().build()
+                StrictMode.setThreadPolicy(policy)
+                requestMethod = "GET"
+                setRequestProperty("charset", "utf-8")
+                return readDataFromStream(responseCode, inputStream);
+            }
         }
         fun post(stringUrl: String, body: JSONObject): JSONObject? {
             val url = URL(stringUrl);
