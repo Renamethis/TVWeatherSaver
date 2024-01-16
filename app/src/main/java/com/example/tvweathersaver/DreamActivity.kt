@@ -78,6 +78,7 @@ class DreamActivity : DreamService() {
     private fun updateEnviroViews(layout: ConstraintLayout) {
         val response = HttpClient.get(
             applicationContext.getString(R.string.enviro_backend_url))
+        response ?: return
         var height = layout.measuredHeight - 1100;
         var width = layout.measuredWidth - 1890;
         for(key in response!!.keys()) {
@@ -116,7 +117,7 @@ class DreamActivity : DreamService() {
         txtCurrentTime.text = curTime
     }
     private fun calculateBackgroundGradient(): GradientDrawable {
-        val darkFactor = 1 - ((Date().hours + 17)%24)/24f
+        val darkFactor = (1 - (24 - Date().hours)/24f)*2;
         val gd = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
                 darkenColor(startColor, darkFactor),
