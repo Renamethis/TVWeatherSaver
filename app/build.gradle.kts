@@ -61,6 +61,7 @@ dependencies {
     implementation("com.github.tianma8023:SunriseSunsetView:0.0.2")
     implementation("com.github.MatteoBattilana:WeatherView:3.0.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("com.google.android.gms:play-services-location:21.0.1")
     androidTestImplementation(platform("androidx.compose:compose-bom:2023.08.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
     debugImplementation("androidx.compose.ui:ui-tooling")
