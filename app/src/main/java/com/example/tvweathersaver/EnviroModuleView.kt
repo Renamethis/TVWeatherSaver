@@ -20,10 +20,21 @@ import android.graphics.RectF
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.res.getFloatOrThrow
 import androidx.core.content.res.getIntOrThrow
+fun Float.format(digits: Int) = "%.${digits}f".format(this)
 
 private const val imgSize: Int = 48;
 
 class EnviroModuleView : View {
+    private val replaceMap: HashMap<String, String> = hashMapOf<String, String>(
+        "temperature" to "t",
+        "dust" to "dust",
+        "humidity" to "hum",
+        "illumination" to "light",
+        "nh3" to "nh3",
+        "oxidizing" to "ox",
+        "pressure" to "press",
+        "reducing" to "co2",
+    )
     private var point: Point? = null
     private var icon: Bitmap? = null;
     private var name: String? = null;
@@ -103,7 +114,8 @@ class EnviroModuleView : View {
         rectBox.right = x + imgSize
         rectBox.bottom = y + imgSize
         canvas.drawBitmap(icon!!, null, rectBox, null)
-        canvas.drawText("$name $value $unit",
+        val replacedName = replaceMap[name]
+        canvas.drawText("$replacedName ${value?.format(2)} $unit",
             (point!!.x - imgSize/2).toFloat(), (point!!.y - imgSize/2).toFloat(), textPaint)
         super.onDraw(canvas)
     }
