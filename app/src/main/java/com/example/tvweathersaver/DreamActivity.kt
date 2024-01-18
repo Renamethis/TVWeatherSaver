@@ -17,6 +17,7 @@ import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
 import java.util.Date
@@ -25,8 +26,14 @@ import java.util.Date
 private const val startColor = 0x87CEEB;
 private const val endColor = 0x377E9B;
 
+operator fun JSONArray.iterator(): Iterator<JSONObject>
+        = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
 class DreamActivity : DreamService() {
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private var locationManager: LocationManager? = null
+    private lateinit var cloudView: CloudView;
+
     @SuppressLint("AppBundleLocaleChanges")
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onAttachedToWindow() {
@@ -36,14 +43,18 @@ class DreamActivity : DreamService() {
         isFullscreen = true
         isInteractive = true
         setContentView(R.layout.weather_view)
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+        cloudView = findViewById(R.id.cloud_view)
     }
 
     override fun onDreamingStarted() {
         super.onDreamingStarted()
         //findViewById<WeatherView>(R.id.weather_view).setCustomBitmap(
         //    BitmapFactory.decodeResource(applicationContext.getResources(), R.drawable.snowflake))
-        findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.RAIN)
-        findViewById<WeatherView>(R.id.weather_view).emissionRate = 150.0f
+        cloudView.setDefaults()
+        cloudView.stopAnimations()
+        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
+        val layout = findViewById<FrameLayout>(R.id.dream_layout)
         val handler = Handler()
         var enviroRunnable: Runnable? = null
         val timeRunnable = object : Runnable {
