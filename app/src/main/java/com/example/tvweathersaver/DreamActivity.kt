@@ -56,18 +56,29 @@ class DreamActivity : DreamService() {
         locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
         val layout = findViewById<FrameLayout>(R.id.dream_layout)
         val handler = Handler()
+        var weatherRunnable: Runnable? = null
         var enviroRunnable: Runnable? = null
         val timeRunnable = object : Runnable {
             var count = 0;
             override fun run () {
                 handler.removeCallbacksAndMessages(null)
                 updateTime()
-                if(count % 100 == 0) {
+                if(count % 300 == 0) {
+                    weatherRunnable?.let { handler.postDelayed(it, 100) }
+                    count = 0;
+                } else if(count % 100 == 0) {
                     enviroRunnable?.let { handler.postDelayed(it, 100) }
                     count = 0;
                 }
                 count++;
                 handler.postDelayed(this, 100)
+            }
+        }
+        weatherRunnable = object: Runnable {
+            override fun run() {
+                handler.removeCallbacksAndMessages(null)
+                updateWeatherView()
+                handler.postDelayed(timeRunnable, 100)
             }
         }
         enviroRunnable = object : Runnable {
