@@ -1,17 +1,19 @@
 package com.example.tvweathersaver
 
-import android.R.drawable
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.pm.PackageManager
 import android.graphics.Point
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.service.dreams.DreamService
-import android.util.DisplayMetrics
 import android.util.Log
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.compose.ui.graphics.Color
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.app.ActivityCompat
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
@@ -20,10 +22,16 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import org.json.JSONArray
+import org.json.JSONObject
 import java.util.Date
+import kotlin.math.cos
+import kotlin.math.pow
 
 
-private const val startColor = 0x87CEEB;
+private const val startColor = 0x91D8F5;
 private const val endColor = 0x377E9B;
 
 operator fun JSONArray.iterator(): Iterator<JSONObject>
@@ -31,7 +39,6 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
 
 class DreamActivity : DreamService() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var locationManager: LocationManager? = null
     private lateinit var cloudView: CloudView;
 
     @SuppressLint("AppBundleLocaleChanges")
@@ -53,7 +60,6 @@ class DreamActivity : DreamService() {
         //    BitmapFactory.decodeResource(applicationContext.getResources(), R.drawable.snowflake))
         cloudView.setDefaults()
         cloudView.stopAnimations()
-        locationManager = getSystemService(LOCATION_SERVICE) as LocationManager?;
         val layout = findViewById<FrameLayout>(R.id.dream_layout)
         val handler = Handler()
         var weatherRunnable: Runnable? = null
@@ -68,7 +74,6 @@ class DreamActivity : DreamService() {
                     count = 0;
                 } else if(count % 100 == 0) {
                     enviroRunnable?.let { handler.postDelayed(it, 100) }
-                    count = 0;
                 }
                 count++;
                 handler.postDelayed(this, 100)
@@ -84,24 +89,69 @@ class DreamActivity : DreamService() {
         enviroRunnable = object : Runnable {
             override fun run() {
                 handler.removeCallbacksAndMessages(null)
-                updateEnviroViews(findViewById<ConstraintLayout>(R.id.dream_layout))
+                updateEnviroViews(findViewById<FrameLayout>(R.id.dream_layout))
                 handler.postDelayed(timeRunnable, 100)
             }
         }
         handler.postDelayed(timeRunnable,100)
-        handler.postDelayed(enviroRunnable, 100)
-        val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         layout.setBackgroundDrawable(calculateBackgroundGradient());
-
 //      // layout.addView(testEnviroView)
         // Start playback, etc
     }
 
-    private fun updateEnviroViews(layout: ConstraintLayout) {
+    private fun updateWeatherView() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        fusedLocationClient.lastLocation
+            .addOnSuccessListener { location ->
+                Log.i("DECIK", "DECIMETER");
+                val response = HttpClient.get(
+                    applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
+                            location?.latitude + "&lon=" + location?.longitude + "&appid=" +
+                            applicationContext.getString(R.string.apikey))
+                val currentWeather = response?.getJSONObject("current")
+                val clouds = currentWeather?.getInt("clouds")
+                val wind = currentWeather?.getDouble("wind_speed")
+                val weather = currentWeather?.getJSONArray("weather")
+                if (clouds != null) {
+                    if(clouds > 20) {
+                        cloudView.setPassTimeVariance(
+                            (20000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
+                        )
+                        cloudView.setBasePassTime(
+                            (10000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
+                        )
+                        cloudView.setCloudCount((10.0 * ((clouds?.div(100.0) ?: 0.0))).toInt())
+                        if(!cloudView.isAnimationRequested)
+                            cloudView.startAnimation()
+                    }
+                }
+                weather?.let {
+                    for (it in weather) {
+                        val weatherMain = it.getString("main")
+                        val weatherDescription = it.getString("description")
+                        if(weatherMain == "Snow")
+                            findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.SNOW)
+                        else if(weatherMain == "Rain")
+                            findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.RAIN)
+//                            findViewById<WeatherView>(R.id.weather_view).emissionRate = 150.0f
+                    }
+                }
+            }
+    }
+    private fun updateEnviroViews(layout: FrameLayout) {
         val response = HttpClient.get(
             applicationContext.getString(R.string.enviro_backend_url))
         response ?: return
-        var height = layout.measuredHeight - 1100;
+        var height = layout.measuredHeight - 1110;
         var width = layout.measuredWidth - 1890;
         for(key in response!!.keys()) {
             if(key != "datetime") {
@@ -109,7 +159,7 @@ class DreamActivity : DreamService() {
                 val value = obj.getDouble("value")
                 val unit = obj.getString("unit")
                 val limits = obj.getJSONArray("limits")
-                if(layout.getViewById(key.hashCode()) == null) {
+                if(layout.findViewById<EnviroModuleView>(key.hashCode()) == null) {
                     val drawableId = applicationContext.resources.getIdentifier(key, "drawable", "com.example.tvweathersaver");
                     val enviroView = EnviroModuleView(applicationContext,
                         drawableId, key,
@@ -121,12 +171,12 @@ class DreamActivity : DreamService() {
                         ConstraintLayout.LayoutParams.MATCH_PARENT)
                     layout.addView(enviroView);
                 } else {
-                    val existsView = layout.getViewById(key.hashCode()) as? EnviroModuleView
+                    val existsView = layout.findViewById(key.hashCode()) as? EnviroModuleView
                     existsView?.updateView(value.toFloat())
                 }
                 layout.invalidate()
             }
-            height += 60
+            height += 65
         }
     }
     private fun updateTime() {
@@ -139,7 +189,8 @@ class DreamActivity : DreamService() {
         txtCurrentTime.text = curTime
     }
     private fun calculateBackgroundGradient(): GradientDrawable {
-        val darkFactor = (1 - (24 - Date().hours)/24f)*2;
+        val hours = Date().hours
+        val darkFactor = 1 -  0.55f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
         val gd = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
                 darkenColor(startColor, darkFactor),
