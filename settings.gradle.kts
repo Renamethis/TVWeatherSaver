@@ -16,4 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "TVWeatherSaver"
 include(":app")
- 
+include(":app:library")
