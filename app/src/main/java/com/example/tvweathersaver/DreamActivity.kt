@@ -62,35 +62,30 @@ class DreamActivity : DreamService() {
         cloudView.stopAnimations()
         val layout = findViewById<FrameLayout>(R.id.dream_layout)
         val handler = Handler()
-        var weatherRunnable: Runnable? = null
-        var enviroRunnable: Runnable? = null
+        lateinit var weatherRunnable: Runnable
+        lateinit var enviroRunnable: Runnable
         val timeRunnable = object : Runnable {
-            var count = 0;
+            @RequiresApi(Build.VERSION_CODES.Q)
             override fun run () {
-                handler.removeCallbacksAndMessages(null)
+                handler.removeCallbacksAndMessages(this)
                 updateTime()
-                if(count % 300 == 0) {
-                    weatherRunnable?.let { handler.postDelayed(it, 100) }
-                    count = 0;
-                } else if(count % 100 == 0) {
-                    enviroRunnable?.let { handler.postDelayed(it, 100) }
-                }
-                count++;
+                if(!handler.hasCallbacks(enviroRunnable))
+                    handler.postDelayed(enviroRunnable, 5000)
+                if(!handler.hasCallbacks(weatherRunnable))
+                    handler.postDelayed(weatherRunnable, 1000)
                 handler.postDelayed(this, 100)
             }
         }
         weatherRunnable = object: Runnable {
             override fun run() {
-                handler.removeCallbacksAndMessages(null)
-                updateWeatherView()
-                handler.postDelayed(timeRunnable, 100)
+                handler.removeCallbacksAndMessages(this)
+                getWeatherByLocation()
             }
         }
         enviroRunnable = object : Runnable {
             override fun run() {
-                handler.removeCallbacksAndMessages(null)
-                updateEnviroViews(findViewById<FrameLayout>(R.id.dream_layout))
-                handler.postDelayed(timeRunnable, 100)
+                handler.removeCallbacksAndMessages(this)
+                updateEnviroViews(findViewById<ConstraintLayout>(R.id.dream_layout))
             }
         }
         handler.postDelayed(timeRunnable,100)
