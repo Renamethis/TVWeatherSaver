@@ -1,11 +1,12 @@
 package com.example.library
 
+import androidx.compose.ui.graphics.Color
 import android.animation.ObjectAnimator
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.GradientDrawable
 import android.util.AttributeSet
 import android.util.Log
 import android.view.ViewTreeObserver
@@ -15,12 +16,21 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
+import androidx.core.graphics.alpha
+import androidx.core.graphics.blue
+import androidx.core.graphics.green
+import androidx.core.graphics.red
 import androidx.core.view.updateLayoutParams
 import java.lang.Exception
 import java.util.*
+import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.random.Random
+private const val startColor = 0x91D8F5;
+private const val endColor = 0x377E9B;
 
 class CloudView : FrameLayout {
   constructor(context: Context) : super(context)
@@ -34,7 +44,7 @@ class CloudView : FrameLayout {
   }
 
   private var isDrawn = false
-  private var isAnimating = false
+  var isAnimating = false
   private var requestedSizeRange = DEFAULT_MINIMUM_CLOUD_SIZE..DEFAULT_MAXIMUM_CLOUD_SIZE
   private val imageViews = HashSet<ImageView>()
 
@@ -80,16 +90,13 @@ class CloudView : FrameLayout {
           getInteger(R.styleable.CloudView_fadeInTimeMs, DEFAULT_FADE_IN_TIME_MS).apply {
 
           }
-
-          getColor(R.styleable.CloudView_skyColor, Color.parseColor("#03A9F4")).apply {
-            setBackgroundColor(this)
-          }
+          // TODO: Find a better way to set up a background
+          setBackgroundDrawable(calculateBackgroundGradient())
         } finally {
           recycle()
         }
     }
   }
-
   /**
    * Sets all values to their defaults. This is not necessary as a first step if no values have
    * been changed.
@@ -115,7 +122,24 @@ class CloudView : FrameLayout {
       field = value
       if (isDrawn) respawnClouds()
     }
-
+  private fun calculateBackgroundGradient(): GradientDrawable {
+    val hours = Date().hours
+    val darkFactor = 1f -  0.55f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
+    val gd = GradientDrawable(
+      GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
+        darkenColor(startColor, darkFactor),
+        darkenColor(endColor, darkFactor))
+    )
+    gd.cornerRadius = 0f
+    return gd
+  }
+  private fun darkenColor(color: Int, factor: Float): Int {
+    val a: Int = color.alpha
+    val r = (color.red * factor).roundToInt()
+    val g = (color.green * factor).roundToInt()
+    val b = (color.blue * factor).roundToInt()
+    return Color(a, r, g, b).hashCode()
+  }
   private fun respawnClouds() {
     resetClouds(cloudCount)
     if (isAnimationRequested) forceStartAnimation()

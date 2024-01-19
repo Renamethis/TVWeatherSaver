@@ -5,12 +5,14 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.graphics.Point
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.os.Handler
 import android.service.dreams.DreamService
 import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
@@ -24,11 +26,22 @@ import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
+import kotlin.concurrent.thread
 import kotlin.math.cos
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 
 private const val startColor = 0x91D8F5;
@@ -59,8 +72,8 @@ class DreamActivity : DreamService() {
         //findViewById<WeatherView>(R.id.weather_view).setCustomBitmap(
         //    BitmapFactory.decodeResource(applicationContext.getResources(), R.drawable.snowflake))
         cloudView.setDefaults()
+        cloudView.setMinSize(300)
         cloudView.stopAnimations()
-        val layout = findViewById<FrameLayout>(R.id.dream_layout)
         val handler = Handler()
         lateinit var weatherRunnable: Runnable
         lateinit var enviroRunnable: Runnable
@@ -70,9 +83,9 @@ class DreamActivity : DreamService() {
                 handler.removeCallbacksAndMessages(this)
                 updateTime()
                 if(!handler.hasCallbacks(enviroRunnable))
-                    handler.postDelayed(enviroRunnable, 5000)
+                    handler.postDelayed(enviroRunnable, 50000)
                 if(!handler.hasCallbacks(weatherRunnable))
-                    handler.postDelayed(weatherRunnable, 1000)
+                    handler.postDelayed(weatherRunnable, 100000)
                 handler.postDelayed(this, 100)
             }
         }
@@ -89,9 +102,7 @@ class DreamActivity : DreamService() {
             }
         }
         handler.postDelayed(timeRunnable,100)
-        layout.setBackgroundDrawable(calculateBackgroundGradient());
-//      // layout.addView(testEnviroView)
-        // Start playback, etc
+        handler.postDelayed(weatherRunnable, 1000)
     }
 
     val scope = CoroutineScope(Job() + Dispatchers.Main);
@@ -180,7 +191,7 @@ class DreamActivity : DreamService() {
                             value.toFloat(),
                             unit,
                             Point(width, height),
-                            Color(darkenColor(startColor, 0.2f))
+                            Color(startColor)
                         )
                         enviroView.id = key.hashCode()
                         enviroView.layoutParams = ConstraintLayout.LayoutParams(
@@ -206,24 +217,6 @@ class DreamActivity : DreamService() {
         val seconds = formatTime(dt.seconds)
         val curTime = "$hours:$minutes:$seconds"
         txtCurrentTime.text = curTime
-    }
-    private fun calculateBackgroundGradient(): GradientDrawable {
-        val hours = Date().hours
-        val darkFactor = 1 -  0.55f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
-        val gd = GradientDrawable(
-            GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
-                darkenColor(startColor, darkFactor),
-                darkenColor(startColor, darkFactor))
-        )
-        gd.cornerRadius = 0f
-        return gd
-    }
-    private fun darkenColor(color: Int, factor: Float): Int {
-        val a: Int = color.alpha
-        val r = Math.round(color.red * factor).toInt()
-        val g = Math.round(color.green * factor).toInt()
-        val b = Math.round(color.blue * factor).toInt()
-        return Color(a, r, g, b).hashCode()
     }
     private fun formatTime(value: Int) : String {
         if(value < 10)
