@@ -32,21 +32,24 @@ private fun readDataFromStream(responseCode: Int, inputStream: InputStream): JSO
 
 class HttpClient {
     companion object {
-        fun get(stringUrl: String): JSONObject? {
+        suspend fun get(stringUrl: String): JSONObject? {
             val url = URL(stringUrl);
             with(url.openConnection() as HttpURLConnection) {
                 val policy = ThreadPolicy.Builder().permitAll().build()
                 StrictMode.setThreadPolicy(policy)
                 requestMethod = "GET"
-                connectTimeout = 50;
+                connectTimeout = 2000;
                 setRequestProperty("charset", "utf-8")
                 try {
-                    return readDataFromStream(responseCode, inputStream);
-                } catch(_: ConnectException) {
+                    return readDataFromStream(responseCode, inputStream)
+                } catch (_: ConnectException) {
                     Log.i("TVErrorLog", "Can't connect to server")
                     return null;
-                } catch(_: SocketTimeoutException) {
+                } catch (_: SocketTimeoutException) {
                     Log.i("TVErrorLog", "Connection time out")
+                    return null;
+                } catch(_: java.io.IOException) {
+                    Log.i("TVErrorLog", "IO Exception")
                     return null;
                 }
             }
