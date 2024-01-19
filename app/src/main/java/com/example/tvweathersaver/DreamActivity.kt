@@ -94,7 +94,45 @@ class DreamActivity : DreamService() {
         // Start playback, etc
     }
 
-    private fun updateWeatherView() {
+    val scope = CoroutineScope(Job() + Dispatchers.Main);
+    private val mutex = Mutex()
+    private fun updateWeather(url: String) {
+        if(!mutex.tryLock())
+            return
+        scope.launch {
+            val response = withContext(Dispatchers.IO) { HttpClient.get(url) }
+            val currentWeather = response?.getJSONObject("current")
+            val clouds = currentWeather?.getInt("clouds")
+            val wind = currentWeather?.getDouble("wind_speed")
+            val weather = currentWeather?.getJSONArray("weather")
+            if (clouds != null) {
+                if (clouds!! > 20 && !cloudView.isAnimating) { // TODO: Check if difference is enough to update animation
+                    cloudView.setPassTimeVariance(
+                        (20000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
+                    )
+                    cloudView.setBasePassTime(
+                        (10000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
+                    )
+                    cloudView.setCloudCount((10.0 * ((clouds?.div(100.0) ?: 0.0))).toInt())
+                    if (!cloudView.isAnimating)
+                        cloudView.startAnimation()
+                }
+            }
+            weather?.let {
+                for (it in weather!!) {
+                    val weatherMain = it.getString("main")
+                    val weatherDescription = it.getString("description")
+                    if (weatherMain == "Snow")
+                        findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.SNOW)
+                    else if (weatherMain == "Rain")
+                        findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.RAIN)
+//                            findViewById<WeatherView>(R.id.weather_view).emissionRate = 150.0f
+                }
+            }
+            mutex.unlock();
+        }
+    }
+    private fun getWeatherByLocation(){
         if (ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_FINE_LOCATION
@@ -107,71 +145,57 @@ class DreamActivity : DreamService() {
         }
         fusedLocationClient.lastLocation
             .addOnSuccessListener { location ->
-                Log.i("DECIK", "DECIMETER");
-                val response = HttpClient.get(
+                updateWeather(
                     applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
                             location?.latitude + "&lon=" + location?.longitude + "&appid=" +
-                            applicationContext.getString(R.string.apikey))
-                val currentWeather = response?.getJSONObject("current")
-                val clouds = currentWeather?.getInt("clouds")
-                val wind = currentWeather?.getDouble("wind_speed")
-                val weather = currentWeather?.getJSONArray("weather")
-                if (clouds != null) {
-                    if(clouds > 20) {
-                        cloudView.setPassTimeVariance(
-                            (20000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
-                        )
-                        cloudView.setBasePassTime(
-                            (10000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
-                        )
-                        cloudView.setCloudCount((10.0 * ((clouds?.div(100.0) ?: 0.0))).toInt())
-                        if(!cloudView.isAnimationRequested)
-                            cloudView.startAnimation()
-                    }
-                }
-                weather?.let {
-                    for (it in weather) {
-                        val weatherMain = it.getString("main")
-                        val weatherDescription = it.getString("description")
-                        if(weatherMain == "Snow")
-                            findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.SNOW)
-                        else if(weatherMain == "Rain")
-                            findViewById<WeatherView>(R.id.weather_view).setWeatherData(PrecipType.RAIN)
-//                            findViewById<WeatherView>(R.id.weather_view).emissionRate = 150.0f
-                    }
-                }
+                            applicationContext.getString(R.string.apikey)
+                )
             }
     }
-    private fun updateEnviroViews(layout: FrameLayout) {
-        val response = HttpClient.get(
-            applicationContext.getString(R.string.enviro_backend_url))
-        response ?: return
-        var height = layout.measuredHeight - 1110;
-        var width = layout.measuredWidth - 1890;
-        for(key in response!!.keys()) {
-            if(key != "datetime") {
-                val obj = response.getJSONObject(key);
-                val value = obj.getDouble("value")
-                val unit = obj.getString("unit")
-                val limits = obj.getJSONArray("limits")
-                if(layout.findViewById<EnviroModuleView>(key.hashCode()) == null) {
-                    val drawableId = applicationContext.resources.getIdentifier(key, "drawable", "com.example.tvweathersaver");
-                    val enviroView = EnviroModuleView(applicationContext,
-                        drawableId, key,
-                        Pair<Int, Int>(limits.getInt(0), limits.getInt(1)), value.toFloat(), unit, Point(width, height), Color(darkenColor(startColor, 0.2f))
-                    )
-                    enviroView.id = key.hashCode()
-                    enviroView.layoutParams = ConstraintLayout.LayoutParams(
-                        ConstraintLayout.LayoutParams.MATCH_PARENT,
-                        ConstraintLayout.LayoutParams.MATCH_PARENT)
-                    layout.addView(enviroView);
-                } else {
-                    val existsView = layout.findViewById(key.hashCode()) as? EnviroModuleView
-                    existsView?.updateView(value.toFloat())
+    private fun updateEnviroViews(layout: ConstraintLayout) {
+        val job: Job = scope.launch {
+            val response = HttpClient.get(
+                applicationContext.getString(R.string.enviro_backend_url)
+            )
+            response ?: return@launch
+            var height = layout.measuredHeight - 1110;
+            var width = layout.measuredWidth - 1890;
+            for (key in response!!.keys()) {
+                if (key != "datetime") {
+                    val obj = response!!.getJSONObject(key);
+                    val value = obj.getDouble("value")
+                    val unit = obj.getString("unit")
+                    val limits = obj.getJSONArray("limits")
+                    if (layout.findViewById<EnviroModuleView>(key.hashCode()) == null) {
+                        val drawableId = applicationContext.resources.getIdentifier(
+                            key,
+                            "drawable",
+                            "com.example.tvweathersaver"
+                        );
+                        val enviroView = EnviroModuleView(
+                            applicationContext,
+                            drawableId,
+                            key,
+                            Pair<Int, Int>(limits.getInt(0), limits.getInt(1)),
+                            value.toFloat(),
+                            unit,
+                            Point(width, height),
+                            Color(darkenColor(startColor, 0.2f))
+                        )
+                        enviroView.id = key.hashCode()
+                        enviroView.layoutParams = ConstraintLayout.LayoutParams(
+                            ConstraintLayout.LayoutParams.MATCH_PARENT,
+                            ConstraintLayout.LayoutParams.MATCH_PARENT
+                        )
+                        layout.addView(enviroView);
+                    } else {
+                        val existsView = layout.findViewById(key.hashCode()) as? EnviroModuleView
+                        existsView?.updateView(value.toFloat())
+                    }
+                    layout.invalidate()
                 }
-                layout.invalidate()
+                height += 65
             }
-            height += 65
         }
     }
     private fun updateTime() {
@@ -207,13 +231,16 @@ class DreamActivity : DreamService() {
         return value.toString();
     }
 
+    // TODO: Realize when it's better to dispose
     override fun onDreamingStopped() {
+        scope.cancel()
         super.onDreamingStopped()
         Log.i(TAG, "onDreamingStopped")
         // Stop playback, animations, etc
     }
 
     override fun onDetachedFromWindow() {
+        scope.cancel()
         super.onDetachedFromWindow()
         Log.i(TAG, "onDetachedFromWindow")
         // Remove resources
