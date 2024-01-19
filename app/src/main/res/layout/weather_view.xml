@@ -1,23 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/dream_layout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/dream_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:padding="0dp">
-    <!--    <com.github.tianma8023.ssv.SunriseSunsetView-->
-    <!--        android:id="@+id/ssv"-->
-    <!--        android:layout_height="wrap_content"-->
-    <!--        android:layout_margin="10dp"-->
-    <!--        android:layout_width="match_parent"-->
-    <!--        app:ssv_label_text_color="@color/colorAccent"-->
-    <!--        app:ssv_label_text_size="16sp"-->
-    <!--        app:ssv_shadow_color="@color/lightGreen"-->
-    <!--        app:ssv_sun_color="@color/amber"-->
-    <!--        app:ssv_sun_radius="10dp"-->
-    <!--        app:ssv_track_color="@color/teal"-->
-    <!--        app:ssv_track_width="1.5dp"-->
-    <!--        />-->
+    android:layout_height="match_parent">
+
+    <com.example.library.CloudView
+        android:id="@+id/cloud_view"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:basePassTimeMs="1000"
+        app:passTimeVarianceMs="500"/>
+
     <com.github.matteobattilana.weather.WeatherView
         android:id="@+id/weather_view"
         android:layout_width="0dp"
@@ -25,8 +20,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" >
-    </com.github.matteobattilana.weather.WeatherView>
+        app:layout_constraintTop_toTopOf="parent" />
+
     <TextView
         android:fontFamily="sans-serif-medium"
         android:textSize="45sp"
