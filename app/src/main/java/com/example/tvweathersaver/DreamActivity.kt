@@ -25,7 +25,12 @@ import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
 import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationAvailability
+import com.google.android.gms.location.LocationCallback
+import com.google.android.gms.location.LocationRequest
+import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -151,69 +156,49 @@ class DreamActivity : DreamService() {
             mutex.unlock();
         }
     }
-    private fun getWeatherByLocation(){
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_FINE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
+    private fun checkLocationPermissions() : Boolean {
+        return !(ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED)
+    }
+    @SuppressLint("MissingPermission")
+    private fun requestLocation() {
+        if(!checkLocationPermissions())
             return
-        }
-        fusedLocationClient.lastLocation
-            .addOnSuccessListener { location ->
+
+        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+            .setMinUpdateIntervalMillis(500)
+            .setMaxUpdateDelayMillis(1000)
+            .build()
+        fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
+            override fun onLocationResult(p0: LocationResult) {
+                p0 ?: return
+                for (location in p0.locations) {}
+            }
+
+            override fun onLocationAvailability(p0: LocationAvailability) {
+                super.onLocationAvailability(p0)
+            }
+        }, handler.looper)
+
+    }
+    @SuppressLint("MissingPermission")
+    private fun getWeatherByLocation(){
+        if(!checkLocationPermissions())
+            return
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            if(location != null) {
                 updateWeather(
                     applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
-                            location?.latitude + "&lon=" + location?.longitude + "&appid=" +
+                            location.latitude + "&lon=" + location.longitude + "&appid=" +
                             applicationContext.getString(R.string.apikey)
                 )
-            }
-    }
-    private fun updateEnviroViews(layout: ConstraintLayout) {
-        val job: Job = scope.launch {
-            val response = HttpClient.get(
-                applicationContext.getString(R.string.enviro_backend_url)
-            )
-            response ?: return@launch
-            var height = layout.measuredHeight - 1110;
-            var width = layout.measuredWidth - 1890;
-            for (key in response!!.keys()) {
-                if (key != "datetime") {
-                    val obj = response!!.getJSONObject(key);
-                    val value = obj.getDouble("value")
-                    val unit = obj.getString("unit")
-                    val limits = obj.getJSONArray("limits")
-                    if (layout.findViewById<EnviroModuleView>(key.hashCode()) == null) {
-                        val drawableId = applicationContext.resources.getIdentifier(
-                            key,
-                            "drawable",
-                            "com.example.tvweathersaver"
-                        );
-                        val enviroView = EnviroModuleView(
-                            applicationContext,
-                            drawableId,
-                            key,
-                            Pair<Int, Int>(limits.getInt(0), limits.getInt(1)),
-                            value.toFloat(),
-                            unit,
-                            Point(width, height),
-                            Color(startColor)
-                        )
-                        enviroView.id = key.hashCode()
-                        enviroView.layoutParams = ConstraintLayout.LayoutParams(
-                            ConstraintLayout.LayoutParams.MATCH_PARENT,
-                            ConstraintLayout.LayoutParams.MATCH_PARENT
-                        )
-                        layout.addView(enviroView);
-                    } else {
-                        val existsView = layout.findViewById(key.hashCode()) as? EnviroModuleView
-                        existsView?.updateView(value.toFloat())
-                    }
-                    layout.invalidate()
-                }
-                height += 65
+            } else {
+                requestLocation()
             }
         }
     }
