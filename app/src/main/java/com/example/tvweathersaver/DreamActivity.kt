@@ -50,9 +50,15 @@ private const val endColor = 0x377E9B;
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
+val scope = CoroutineScope(Job() + Dispatchers.Main);
+
 class DreamActivity : DreamService() {
     private lateinit var fusedLocationClient: FusedLocationProviderClient
     private lateinit var cloudView: CloudView;
+    private lateinit var enviroContainer: EnviroContainer;
+    private lateinit var weatherRunnable: Runnable
+    private lateinit var enviroRunnable: Runnable
+    private val handler = Handler()
 
     @SuppressLint("AppBundleLocaleChanges")
     @OptIn(ExperimentalTvMaterial3Api::class)
@@ -65,6 +71,8 @@ class DreamActivity : DreamService() {
         setContentView(R.layout.weather_view)
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
         cloudView = findViewById(R.id.cloud_view)
+        enviroContainer = EnviroContainer(findViewById<ConstraintLayout>(R.id.dream_layout), applicationContext, scope, Color(
+            startColor));
     }
 
     override fun onDreamingStarted() {
@@ -98,7 +106,7 @@ class DreamActivity : DreamService() {
         enviroRunnable = object : Runnable {
             override fun run() {
                 handler.removeCallbacksAndMessages(this)
-                updateEnviroViews(findViewById<ConstraintLayout>(R.id.dream_layout))
+                enviroContainer.update()
             }
         }
         handler.postDelayed(timeRunnable,100)
