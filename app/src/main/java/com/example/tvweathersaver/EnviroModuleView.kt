@@ -2,20 +2,14 @@ package com.example.tvweathersaver
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Point
-import android.graphics.drawable.Drawable
-import android.text.TextPaint
 import android.util.AttributeSet
-import android.util.Log
 import android.view.View
 import androidx.core.content.res.getResourceIdOrThrow
-import org.json.JSONObject
-import android.graphics.Rect
 import android.graphics.RectF
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.res.getFloatOrThrow

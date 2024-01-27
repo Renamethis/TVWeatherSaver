@@ -18,7 +18,7 @@ class FusedLocation(private val context: Context) {
     private var fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(context);
     @SuppressLint("MissingPermission")
-    fun requestLocation() {
+    private fun requestLocation() {
         if(!checkLocationPermissions())
             return
 
@@ -29,7 +29,7 @@ class FusedLocation(private val context: Context) {
         fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
             override fun onLocationResult(p0: LocationResult) {
                 p0 ?: return
-                for (location in p0.locations) {}
+                for (location in p0.locations) {} // TODO: Complete
             }
 
             override fun onLocationAvailability(p0: LocationAvailability) {

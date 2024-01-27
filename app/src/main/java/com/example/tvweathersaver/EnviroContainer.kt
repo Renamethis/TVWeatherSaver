@@ -1,5 +1,6 @@
 package com.example.tvweathersaver
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Point
 import androidx.compose.ui.graphics.Color
@@ -21,6 +22,7 @@ class EnviroContainer(
     }
     private var height = layout.measuredHeight - 1110;
     private var width = layout.measuredWidth - 1890;
+    @SuppressLint("DiscouragedApi")
     private fun drawView(key: String, value: Double, unit: String, limits: JSONArray, index: Int) {
         if (layout.findViewById<EnviroModuleView>(key.hashCode()) == null) {
             val drawableId = context.resources.getIdentifier(
@@ -54,9 +56,9 @@ class EnviroContainer(
             val response = withContext(Dispatchers.IO) { HttpClient.get(context.getString(R.string.enviro_backend_url)) }
             response ?: return@launch
             var i: Int = 0;
-            for (key in response!!.keys()) {
+            for (key in response.keys()) {
                 if (key != "datetime") {
-                    val obj = response!!.getJSONObject(key);
+                    val obj = response.getJSONObject(key);
                     val value = obj.getDouble("value")
                     val unit = obj.getString("unit")
                     val limits = obj.getJSONArray("limits")
