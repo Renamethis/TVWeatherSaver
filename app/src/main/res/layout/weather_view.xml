@@ -48,4 +48,17 @@
         android:layout_height="wrap_content"
         android:text="" />
 
+    <TextView
+        android:fontFamily="sans-serif-medium"
+        android:textSize="18sp"
+        android:paddingBottom="20dp"
+        app:layout_constraintLeft_toLeftOf="@id/weather_description"
+        app:layout_constraintRight_toRightOf="@id/weather_description"
+        app:layout_constraintTop_toTopOf="@id/weather_description"
+        app:layout_constraintBottom_toBottomOf="@id/weather_description"
+        android:id="@+id/temperature_view"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
