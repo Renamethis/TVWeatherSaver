@@ -18,7 +18,7 @@ class Weather(
     private val cloudView: CloudView,
     private val weatherView: WeatherView,
     private val weatherDescriptionView: TextView,
-    private val temperatureView: TextView
+    private val regionTemperatureView: TextView,
 ) {
     private val mutex = Mutex()
     init {
@@ -45,10 +45,10 @@ class Weather(
             }
         }
     }
-    private fun updateWeather(currentWeather: JSONObject?) {
+    private fun updateWeather(currentWeather: JSONObject?, region: String?) {
         val weather = currentWeather?.getJSONArray("weather")
-        val temperature = (currentWeather?.getDouble("temp")?.minus(273.0))?.roundToInt().toString() + "°"
-        temperatureView.text = temperature
+        val temperature = region + " " + (currentWeather?.getDouble("temp")?.minus(273.0))?.roundToInt().toString() + "°"
+        regionTemperatureView.text = temperature
         weather?.let {
             for (it in weather) {
                 val weatherMain = it.getString("main")
@@ -72,8 +72,9 @@ class Weather(
         scope.launch {
             val response = withContext(Dispatchers.IO) { HttpClient.get(url) }
             val currentWeather = response?.getJSONObject("current")
+            val region = response?.getString("timezone")?.split("/")?.get(1) ?: ""
             updateClouds(currentWeather);
-            updateWeather(currentWeather)
+            updateWeather(currentWeather, region)
             mutex.unlock();
         }
     }
