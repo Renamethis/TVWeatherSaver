@@ -3,23 +3,16 @@ package com.example.tvweathersaver
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.pm.PackageManager
-import android.graphics.Point
-import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
 import android.service.dreams.DreamService
 import android.util.Log
 import android.view.View
-import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.app.ActivityCompat
-import androidx.core.graphics.alpha
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
@@ -35,18 +28,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
-import kotlin.concurrent.thread
-import kotlin.math.cos
-import kotlin.math.pow
-import kotlin.math.roundToInt
 
 
 private const val startColor = 0x91D8F5;
@@ -58,7 +45,7 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
 val scope = CoroutineScope(Job() + Dispatchers.Main);
 
 class DreamActivity : DreamService() {
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
+    private lateinit var fusedLocation: FusedLocation;
     private lateinit var cloudView: CloudView;
     private lateinit var enviroContainer: EnviroContainer;
     private lateinit var weatherRunnable: Runnable
@@ -74,12 +61,11 @@ class DreamActivity : DreamService() {
         isFullscreen = true
         isInteractive = true
         setContentView(R.layout.weather_view)
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(applicationContext)
+        fusedLocation = FusedLocation(applicationContext)
         cloudView = findViewById(R.id.cloud_view)
         enviroContainer = EnviroContainer(findViewById<ConstraintLayout>(R.id.dream_layout), applicationContext, scope, Color(
             startColor));
     }
-
     override fun onDreamingStarted() {
         super.onDreamingStarted()
         //findViewById<WeatherView>(R.id.weather_view).setCustomBitmap(
@@ -87,9 +73,6 @@ class DreamActivity : DreamService() {
         cloudView.setDefaults()
         cloudView.setMinSize(300)
         cloudView.stopAnimations()
-        val handler = Handler()
-        lateinit var weatherRunnable: Runnable
-        lateinit var enviroRunnable: Runnable
         val timeRunnable = object : Runnable {
             @RequiresApi(Build.VERSION_CODES.Q)
             override fun run () {
@@ -118,7 +101,6 @@ class DreamActivity : DreamService() {
         handler.postDelayed(weatherRunnable, 1000)
     }
 
-    val scope = CoroutineScope(Job() + Dispatchers.Main);
     private val mutex = Mutex()
     private fun updateWeather(url: String) {
         if(!mutex.tryLock())
@@ -130,16 +112,18 @@ class DreamActivity : DreamService() {
             val wind = currentWeather?.getDouble("wind_speed")
             val weather = currentWeather?.getJSONArray("weather")
             if (clouds != null) {
-                if (clouds!! > 20 && !cloudView.isAnimating) { // TODO: Check if difference is enough to update animation
+                if (clouds > 20 && !cloudView.isAnimating) { // TODO: Check if difference is enough to update animation
                     cloudView.setPassTimeVariance(
                         (20000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
-                    )
+                    );
                     cloudView.setBasePassTime(
                         (10000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
-                    )
-                    cloudView.setCloudCount((10.0 * ((clouds?.div(100.0) ?: 0.0))).toInt())
+                    );
+                    cloudView.setCloudCount((10.0 * ((clouds.div(100.0) ?: 0.0))).toInt())
                     if (!cloudView.isAnimating)
-                        cloudView.startAnimation()
+                        cloudView.startAnimation();
+                } else if(clouds <= 20 && cloudView.isAnimating) {
+                    cloudView.stopAnimations();
                 }
             }
             weather?.let {
@@ -156,51 +140,17 @@ class DreamActivity : DreamService() {
             mutex.unlock();
         }
     }
-    private fun checkLocationPermissions() : Boolean {
-        return !(ActivityCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) != PackageManager.PERMISSION_GRANTED)
-    }
-    @SuppressLint("MissingPermission")
-    private fun requestLocation() {
-        if(!checkLocationPermissions())
-            return
-
-        val locationRequest = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
-            .setMinUpdateIntervalMillis(500)
-            .setMaxUpdateDelayMillis(1000)
-            .build()
-        fusedLocationClient.requestLocationUpdates(locationRequest, object : LocationCallback() {
-            override fun onLocationResult(p0: LocationResult) {
-                p0 ?: return
-                for (location in p0.locations) {}
-            }
-
-            override fun onLocationAvailability(p0: LocationAvailability) {
-                super.onLocationAvailability(p0)
-            }
-        }, handler.looper)
-
-    }
     @SuppressLint("MissingPermission")
     private fun getWeatherByLocation(){
-        if(!checkLocationPermissions())
-            return
-        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-            if(location != null) {
-                updateWeather(
-                    applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
-                            location.latitude + "&lon=" + location.longitude + "&appid=" +
-                            applicationContext.getString(R.string.apikey)
-                )
-            } else {
-                requestLocation()
-            }
-        }
+        val location = fusedLocation.getLocation();
+        if(location != null)
+            updateWeather(
+                applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
+                        location.latitude + "&lon=" + location.longitude + "&appid=" +
+                        applicationContext.getString(R.string.apikey)
+            )
+        else
+            getWeatherByLocation()
     }
     private fun updateTime() {
         val txtCurrentTime = findViewById<View>(R.id.time) as TextView
