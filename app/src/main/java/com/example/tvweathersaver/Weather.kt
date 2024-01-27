@@ -10,13 +10,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import kotlin.math.roundToInt
 
 @Suppress("NAME_SHADOWING")
 class Weather(
     private val scope: CoroutineScope,
     private val cloudView: CloudView,
     private val weatherView: WeatherView,
-    private val weatherDescription: TextView
+    private val weatherDescriptionView: TextView,
+    private val temperatureView: TextView
 ) {
     private val mutex = Mutex()
     init {
@@ -45,10 +47,12 @@ class Weather(
     }
     private fun updateWeather(currentWeather: JSONObject?) {
         val weather = currentWeather?.getJSONArray("weather")
+        val temperature = (currentWeather?.getDouble("temp")?.minus(273.0))?.roundToInt().toString() + "°"
+        temperatureView.text = temperature
         weather?.let {
             for (it in weather) {
                 val weatherMain = it.getString("main")
-                weatherDescription.text = it.getString("description")
+                weatherDescriptionView.text = it.getString("description")
                 if (weatherMain == "Snow") {
                     weatherView.setWeatherData(PrecipType.SNOW) // TDOO: Check is it correct
                     val percipation = currentWeather.getJSONObject("snow").getDouble("1h")

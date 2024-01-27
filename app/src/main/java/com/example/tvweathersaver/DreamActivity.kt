@@ -48,7 +48,7 @@ class DreamActivity : DreamService() {
         fusedLocation = FusedLocation(applicationContext)
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         weatherModule = Weather(scope, findViewById(R.id.cloud_view),
-            findViewById(R.id.weather_view), findViewById(R.id.weather_description))
+            findViewById(R.id.weather_view), findViewById(R.id.weather_description), findViewById(R.id.temperature_view))
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
             startColor));
     }
