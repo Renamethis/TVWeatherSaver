@@ -30,7 +30,7 @@ val scope = CoroutineScope(Job() + Dispatchers.Main);
 
 class DreamActivity : DreamService() {
     private lateinit var fusedLocation: FusedLocation;
-    private lateinit var weatherModule: WeatherModule;
+    private lateinit var weatherModule: Weather;
     private lateinit var enviroContainer: EnviroContainer;
     private lateinit var weatherRunnable: Runnable;
     private lateinit var enviroRunnable: Runnable;
@@ -47,8 +47,8 @@ class DreamActivity : DreamService() {
         setContentView(R.layout.weather_view)
         fusedLocation = FusedLocation(applicationContext)
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
-        weatherModule = WeatherModule(scope, findViewById(R.id.cloud_view),
-            findViewById(R.id.weather_view))
+        weatherModule = Weather(scope, findViewById(R.id.cloud_view),
+            findViewById(R.id.weather_view), findViewById(R.id.weather_description))
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
             startColor));
     }
