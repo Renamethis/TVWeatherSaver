@@ -13,6 +13,7 @@ import com.google.android.gms.location.LocationRequest
 import com.google.android.gms.location.LocationResult
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.Task
 
 class FusedLocation(private val context: Context) {
     private var fusedLocationClient: FusedLocationProviderClient =
@@ -39,13 +40,10 @@ class FusedLocation(private val context: Context) {
 
     }
     @SuppressLint("MissingPermission")
-    fun getLocation() : Location? {
+    fun getLocationTask() : Task<Location>? {
         if(!checkLocationPermissions())
-            return null
-        val location = fusedLocationClient.lastLocation.result
-        if(location == null)
-            requestLocation()
-        return location;
+            return null;
+        return fusedLocationClient.lastLocation;
     }
     private fun checkLocationPermissions() : Boolean {
         return !(ActivityCompat.checkSelfPermission(

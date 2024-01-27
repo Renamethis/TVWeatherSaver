@@ -83,15 +83,17 @@ class DreamActivity : DreamService() {
     }
     
     private fun updateWeatherAndClouds(){
-        val location = fusedLocation.getLocation();
-        if(location != null)
-            weatherModule.update(
-                applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
-                        location.latitude + "&lon=" + location.longitude + "&appid=" +
-                        applicationContext.getString(R.string.apikey)
-            )
-        else
-            updateWeatherAndClouds()
+        val location = fusedLocation.getLocationTask();
+        location?.addOnSuccessListener() {
+            if (it != null)
+                weatherModule.update(
+                    applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
+                            it.latitude + "&lon=" + it.longitude + "&appid=" +
+                            applicationContext.getString(R.string.apikey)
+                )
+            else
+                updateWeatherAndClouds()
+        }
     }
     private fun updateTime() {
         val txtCurrentTime = findViewById<View>(R.id.time) as TextView
