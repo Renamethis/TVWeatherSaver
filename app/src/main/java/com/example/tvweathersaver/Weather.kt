@@ -1,5 +1,6 @@
 package com.example.tvweathersaver
 
+import android.widget.TextView
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
@@ -11,10 +12,11 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
 @Suppress("NAME_SHADOWING")
-class WeatherModule(
+class Weather(
     private val scope: CoroutineScope,
     private val cloudView: CloudView,
-    private val weatherView: WeatherView
+    private val weatherView: WeatherView,
+    private val weatherDescription: TextView
 ) {
     private val mutex = Mutex()
     init {
@@ -46,11 +48,17 @@ class WeatherModule(
         weather?.let {
             for (it in weather) {
                 val weatherMain = it.getString("main")
-                val weatherDescription = it.getString("description")
-                if (weatherMain == "Snow")
-                    weatherView.setWeatherData(PrecipType.SNOW)
-                else if (weatherMain == "Rain")
+                weatherDescription.text = it.getString("description")
+                if (weatherMain == "Snow") {
+                    weatherView.setWeatherData(PrecipType.SNOW) // TDOO: Check is it correct
+                    val percipation = currentWeather.getJSONObject("snow").getDouble("1h")
+                    weatherView.emissionRate = (percipation*150.0).toFloat()
+                } else if (weatherMain == "Rain") {
                     weatherView.setWeatherData(PrecipType.RAIN)
+                    val rain = currentWeather.getJSONObject("rain").getDouble("1h")
+                    weatherView.emissionRate = (rain*150.0).toFloat()
+                } else
+                    weatherView.resetWeather()
             }
         }
     }
