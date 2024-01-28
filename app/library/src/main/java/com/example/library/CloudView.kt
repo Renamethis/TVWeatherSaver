@@ -1,12 +1,17 @@
 package com.example.library
 
-import androidx.compose.ui.graphics.Color
 import android.animation.ObjectAnimator
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.ColorFilter
+import android.graphics.LightingColorFilter
+import android.graphics.Paint
+import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.media.Image
 import android.util.AttributeSet
 import android.util.Log
 import android.view.ViewTreeObserver
@@ -14,14 +19,15 @@ import android.view.animation.AlphaAnimation
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.compose.ui.graphics.Color
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
 import androidx.core.graphics.alpha
 import androidx.core.graphics.blue
 import androidx.core.graphics.green
 import androidx.core.graphics.red
+import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
-import java.lang.Exception
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.max
@@ -29,6 +35,8 @@ import kotlin.math.min
 import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.random.Random
+
+
 private const val startColor = 0x91D8F5;
 private const val endColor = 0x377E9B;
 
@@ -43,6 +51,7 @@ class CloudView : FrameLayout {
     if (attrs != null) saveAttrs(attrs, defStyleAttr)
   }
 
+  private var darkFactor: Float = 0.0f;
   private var isDrawn = false
   var isAnimating = false
   private var requestedSizeRange = DEFAULT_MINIMUM_CLOUD_SIZE..DEFAULT_MAXIMUM_CLOUD_SIZE
@@ -122,9 +131,10 @@ class CloudView : FrameLayout {
       field = value
       if (isDrawn) respawnClouds()
     }
+
   private fun calculateBackgroundGradient(): GradientDrawable {
     val hours = Date().hours
-    val darkFactor = 1f -  0.55f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
+    darkFactor = 1f -  0.55f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
     val gd = GradientDrawable(
       GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
         darkenColor(startColor, darkFactor),
@@ -145,26 +155,17 @@ class CloudView : FrameLayout {
     if (isAnimationRequested) forceStartAnimation()
   }
 
+  @SuppressLint("UseCompatLoadingForDrawables")
   private fun resetClouds(cloudCount: Int) {
     removeAllViews()
     imageViews.clear()
     for (i in 0 until cloudCount) {
       val cloud = ImageView(context, null)
-
-      val resId = imageResId
-      val bitmap = imageBitmap
-      val drawable = imageDrawable
-
-      when {
-        resId != null -> cloud.setImageResource(imageResId!!)
-        bitmap != null -> cloud.setImageBitmap(bitmap)
-        drawable != null -> cloud.setImageDrawable(drawable)
-        else -> cloud.setImageResource(R.drawable.ic_cloud)
-      }
-
       cloud.x = width.toFloat()
       cloud.y = height * Random.nextFloat() - cloud.height
-
+      cloud.id = i
+      cloud.setColorFilter(darkenColor(0xEEEEEE, darkFactor), PorterDuff.Mode.MULTIPLY)
+      cloud.setImageResource(R.drawable.ic_cloud)
       val dimen = Random.nextInt(requestedSizeRange.first, requestedSizeRange.last)
       addView(cloud, LayoutParams(dimen, dimen))
       imageViews.add(cloud)
@@ -301,12 +302,12 @@ class CloudView : FrameLayout {
     passTimeVarianceMs = varianceMs
     return this
   }
-
   /**
    * Sets a custom image to be used instead of the default cloud.
    */
   fun setImage(bitmap: Bitmap): CloudView {
     imageBitmap = bitmap
+    imageBitmap = null
     imageResId = null
     imageDrawable = null
 
