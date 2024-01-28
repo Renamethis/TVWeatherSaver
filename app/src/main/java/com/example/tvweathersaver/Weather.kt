@@ -1,11 +1,13 @@
 package com.example.tvweathersaver
 
+import android.util.Log
 import android.widget.TextView
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -70,9 +72,11 @@ class Weather(
         if(!mutex.tryLock())
             return
         scope.launch {
+            Log.i("DECIK", ensureActive().toString())
             val response = withContext(Dispatchers.IO) { HttpClient.get(url) }
             val currentWeather = response?.getJSONObject("current")
             val region = response?.getString("timezone")?.split("/")?.get(1) ?: ""
+            Log.i("DECIK", "WORK")
             updateClouds(currentWeather);
             updateWeather(currentWeather, region)
             mutex.unlock();

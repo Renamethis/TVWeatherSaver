@@ -14,7 +14,7 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
@@ -26,9 +26,8 @@ private const val endColor = 0x377E9B;
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
-val scope = CoroutineScope(Job() + Dispatchers.Main);
-
 class DreamActivity : DreamService() {
+    private lateinit var scope: CoroutineScope;
     private lateinit var fusedLocation: FusedLocation;
     private lateinit var weatherModule: Weather;
     private lateinit var enviroContainer: EnviroContainer;
@@ -41,6 +40,8 @@ class DreamActivity : DreamService() {
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
         Log.i(TAG, "onAttachedToWindow")
+        if(!this::scope.isInitialized)
+            scope = CoroutineScope(Job() + Dispatchers.Main);
         // Setup
         isFullscreen = true
         isInteractive = true
@@ -79,21 +80,24 @@ class DreamActivity : DreamService() {
                 enviroContainer.update()
             }
         }
-        handler.postDelayed(timeRunnable,100)
         handler.postDelayed(weatherRunnable, 1000)
+        handler.postDelayed(timeRunnable,100)
     }
     
     private fun updateWeatherAndClouds(){
+        Log.i("DECIK", "DECIWEATHER")
         val location = fusedLocation.getLocationTask();
-        location?.addOnSuccessListener() {
-            if (it != null)
+        location?.addOnSuccessListener {
+            if (it != null) {
                 weatherModule.update(
                     applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
                             it.latitude + "&lon=" + it.longitude + "&appid=" +
                             applicationContext.getString(R.string.apikey)
                 )
-            else
-                updateWeatherAndClouds()
+            } else {
+                Log.i("DECIK", "WTF");
+                // TODO: Proceed delay
+            }
         }
     }
     private fun updateTime() {
@@ -113,14 +117,14 @@ class DreamActivity : DreamService() {
 
     // TODO: Realize when it's better to dispose
     override fun onDreamingStopped() {
-        scope.cancel()
+        scope.coroutineContext.cancelChildren()
         super.onDreamingStopped()
         Log.i(TAG, "onDreamingStopped")
         // Stop playback, animations, etc
     }
 
     override fun onDetachedFromWindow() {
-        scope.cancel()
+        scope.coroutineContext.cancelChildren()
         super.onDetachedFromWindow()
         Log.i(TAG, "onDetachedFromWindow")
         // Remove resources
