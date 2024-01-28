@@ -83,7 +83,6 @@ class DreamActivity : DreamService() {
     }
     
     private fun updateWeatherAndClouds(){
-        Log.i("DECIK", "DECIWEATHER")
         val location = fusedLocation.getLocationTask();
         location?.addOnSuccessListener {
             if (it != null) {
@@ -93,7 +92,6 @@ class DreamActivity : DreamService() {
                             applicationContext.getString(R.string.apikey)
                 )
             } else {
-                Log.i("DECIK", "WTF");
                 // TODO: Proceed delay
             }
         }
