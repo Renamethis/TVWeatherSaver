@@ -20,8 +20,6 @@ import org.json.JSONObject
 import java.util.Date
 
 
-private const val startColor = 0x91D8F5;
-private const val endColor = 0x377E9B;
 
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
@@ -52,7 +50,7 @@ class DreamActivity : DreamService() {
             findViewById(R.id.weather_view), findViewById(R.id.weather_description),
             findViewById(R.id.temperature_view))
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
-            startColor));
+            resources.getColor(R.color.startColor)));
     }
     override fun onDreamingStarted() {
         super.onDreamingStarted()

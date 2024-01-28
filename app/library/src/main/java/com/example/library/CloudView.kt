@@ -37,10 +37,9 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 
 
-private const val startColor = 0x91D8F5;
-private const val endColor = 0x377E9B;
-
 class CloudView : FrameLayout {
+  private val startColor = resources.getColor(R.color.startColor);
+  private val endColor = resources.getColor(R.color.endColor);
   constructor(context: Context) : super(context)
 
   constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
@@ -164,8 +163,8 @@ class CloudView : FrameLayout {
       cloud.x = width.toFloat()
       cloud.y = height * Random.nextFloat() - cloud.height
       cloud.id = i
-      cloud.setColorFilter(darkenColor(0xEEEEEE, darkFactor), PorterDuff.Mode.MULTIPLY)
       cloud.setImageResource(R.drawable.ic_cloud)
+      cloud.setColorFilter(darkenColor(resources.getColor(R.color.cloudBasic), darkFactor), PorterDuff.Mode.MULTIPLY)
       val dimen = Random.nextInt(requestedSizeRange.first, requestedSizeRange.last)
       addView(cloud, LayoutParams(dimen, dimen))
       imageViews.add(cloud)
