@@ -45,12 +45,12 @@ class DreamActivity : DreamService() {
         isInteractive = true
         setContentView(R.layout.weather_view)
         fusedLocation = FusedLocation(applicationContext)
-        val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         weatherModule = Weather(scope, findViewById(R.id.cloud_view),
             findViewById(R.id.weather_view), findViewById(R.id.weather_description),
             findViewById(R.id.temperature_view))
+        val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
-            resources.getColor(R.color.startColor)));
+            startColor), layout.width, layout.height);
     }
     override fun onDreamingStarted() {
         super.onDreamingStarted()
