@@ -11,6 +11,7 @@ import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.tv.material3.ExperimentalTvMaterial3Api
+import io.github.cdimascio.dotenv.dotenv
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -22,7 +23,6 @@ import java.util.Date
 
 private const val startColor = 0x91D8F5;
 private const val endColor = 0x377E9B;
-
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
@@ -34,6 +34,10 @@ class DreamActivity : DreamService() {
     private lateinit var weatherRunnable: Runnable;
     private lateinit var enviroRunnable: Runnable;
     private val handler = Handler()
+    private val environment = dotenv {
+        directory = "/assets"
+        filename = "env"
+    }
 
     @SuppressLint("AppBundleLocaleChanges")
     @OptIn(ExperimentalTvMaterial3Api::class)
@@ -90,12 +94,10 @@ class DreamActivity : DreamService() {
         location?.addOnSuccessListener {
             if (it != null) {
                 weatherModule.update(
-                    applicationContext.getString(R.string.weather_backend_url) + "?lat=" +
-                            it.latitude + "&lon=" + it.longitude + "&appid=" +
-                            applicationContext.getString(R.string.apikey)
+                    environment["BACKEND_URL"] + "?lat=" +
+                            it.latitude + "&lon=" + it.longitude + "&appid=" + environment["API_KEY"]
                 )
             } else {
-                Log.i("DECIK", "WTF");
                 // TODO: Proceed delay
             }
         }
