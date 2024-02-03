@@ -23,6 +23,7 @@ class Weather(
     private val regionTemperatureView: TextView,
 ) {
     private val mutex = Mutex()
+    private var isWeatherAnimating = false;
     init {
         cloudView.setDefaults()
         cloudView.setMinSize(300)
@@ -55,16 +56,24 @@ class Weather(
             for (it in weather) {
                 val weatherMain = it.getString("main")
                 weatherDescriptionView.text = it.getString("description")
-                if (weatherMain == "Snow") {
-                    weatherView.setWeatherData(PrecipType.SNOW) // TDOO: Check is it correct
-                    val percipation = currentWeather.getJSONObject("snow").getDouble("1h")
-                    weatherView.emissionRate = (percipation*150.0).toFloat()
-                } else if (weatherMain == "Rain") {
-                    weatherView.setWeatherData(PrecipType.RAIN)
-                    val rain = currentWeather.getJSONObject("rain").getDouble("1h")
-                    weatherView.emissionRate = (rain*150.0).toFloat()
-                } else
-                    weatherView.resetWeather()
+                when(weatherMain) {
+                    "Snow" ->
+                        if (!isWeatherAnimating || weatherView.precipType != PrecipType.SNOW) {
+                            weatherView.setWeatherData(PrecipType.SNOW) // TDOO: Check is it correct
+                            val percipation = currentWeather.getJSONObject("snow").getDouble("1h")
+                            weatherView.emissionRate = (percipation * 150.0).toFloat()
+                            isWeatherAnimating = true
+                        }
+                    "Rain" ->
+                        if (!isWeatherAnimating || weatherView.precipType != PrecipType.SNOW) {
+                            weatherView.setWeatherData(PrecipType.RAIN)
+                            val rain = currentWeather.getJSONObject("rain").getDouble("1h")
+                            weatherView.emissionRate = (rain * 150.0).toFloat()
+                            isWeatherAnimating = true
+                        }
+                    else
+                        weatherView.resetWeather()
+                }
             }
         }
     }
