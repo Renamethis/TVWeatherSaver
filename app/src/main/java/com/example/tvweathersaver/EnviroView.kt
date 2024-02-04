@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Build
 import android.util.AttributeSet
@@ -16,22 +17,14 @@ import androidx.core.content.res.getFloatOrThrow
 import androidx.core.content.res.getIntOrThrow
 import androidx.core.content.res.getResourceIdOrThrow
 
+private const val textSize = 22f
 
 fun Float.format(digits: Int) = "%.${digits}f".format(this)
+fun String.format(digits: Int) = "%s".format(this.substring(0, digits))
 
 private const val imgSize: Int = 48;
 
 class EnviroView : View {
-    private val replaceMap: HashMap<String, String> = hashMapOf<String, String>(
-        "temperature" to "t",
-        "dust" to "d",
-        "humidity" to "h",
-        "illumination" to "l",
-        "nh3" to "nh3",
-        "oxidizing" to "ox",
-        "pressure" to "p",
-        "reducing" to "co2",
-    )
     private var icon: Bitmap? = null;
     private var name: String? = null;
     private var limits: Pair<Int, Int>? = null;
@@ -40,7 +33,7 @@ class EnviroView : View {
     private var color: Color? = null;
     private val textPaint: Paint = Paint();
 
-    public fun updateView(value: Float) {
+    fun updateView(value: Float) {
         this.value = value
         invalidate()
     }
@@ -69,6 +62,7 @@ class EnviroView : View {
         this.unit = unit
         this.color = color
     }
+    @SuppressLint("CustomViewStyleable")
     @RequiresApi(Build.VERSION_CODES.O)
     private fun init(attrs: AttributeSet?, defStyle: Int) {
         val parsedAttributes = context.obtainStyledAttributes(
@@ -89,13 +83,14 @@ class EnviroView : View {
         parsedAttributes.recycle()
         init()
     }
-
     @RequiresApi(Build.VERSION_CODES.O)
     private fun init() {
         textPaint.color = Color.White.hashCode()
         textPaint.style = Paint.Style.FILL
         textPaint.typeface = context.resources.getFont(R.font.maston_font)
-        textPaint.textSize = 22f
+        textPaint.textSize = textSize
+        textPaint.textAlign = Paint.Align.LEFT;
+        textPaint.strokeWidth = 10.0f
     }
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = paddingLeft + imgSize*2 + paddingRight
@@ -117,15 +112,22 @@ class EnviroView : View {
             backgroundPaint.color = this.color.hashCode()
             backgroundPaint.alpha = 128
             canvas.drawRoundRect(rectBox, imgSize * 2.0f, imgSize * 2.0f, backgroundPaint)
+            val bufRect = rectBox
             rectBox.left = x + 0.25f* imgSize
             rectBox.top = y + 0.25f* imgSize
             rectBox.right = x + imgSize*1.25f
             rectBox.bottom = y + imgSize*1.25f
             canvas.drawBitmap(icon!!, null, rectBox, null)
-            val replacedName = replaceMap[name]
+            val text = "${value?.format(1)} ${unit?.format(1)}"
+            val bounds = RectF(bufRect)
+            bounds.right = textPaint.measureText(text, 0, text.length)
+            bounds.bottom = textPaint.descent() - textPaint.ascent()
+            bounds.left += (bufRect.width() - bounds.right) / 2.0f;
+            bounds.top += (bufRect.height() - bounds.bottom) / 2.0f;
+
             canvas.drawText(
-                "${value?.format(1)} $unit",
-                (x + imgSize/16).toFloat(), (y + imgSize*1.6).toFloat(), this
+                text,
+                (bounds.left), (y + imgSize*1.6).toFloat(), this
             )
             super.onDraw(canvas)
         }
