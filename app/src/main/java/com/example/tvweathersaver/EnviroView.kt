@@ -44,10 +44,12 @@ class EnviroModuleView : View {
         this.value = value
         invalidate()
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
         init(attrs, 0)
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(
         context,
         attrs,
@@ -55,6 +57,7 @@ class EnviroModuleView : View {
     ) {
         init(attrs, defStyle)
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     constructor(context: Context, iconResource: Int, name: String,
                 limits:Pair<Int, Int>, value: Float, unit: String,
                 point: Point, color: Color) : super(context) {
@@ -67,6 +70,7 @@ class EnviroModuleView : View {
         this.point = point
         this.color = color
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun init(attrs: AttributeSet?, defStyle: Int) {
         val parsedAttributes = context.obtainStyledAttributes(
             attrs, R.styleable.EnviroModuleView, defStyle, 0
@@ -86,9 +90,12 @@ class EnviroModuleView : View {
         parsedAttributes.recycle()
         init()
     }
+
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun init() {
         textPaint.color = Color.White.hashCode()
         textPaint.style = Paint.Style.FILL
+        textPaint.typeface = context.resources.getFont(R.font.maston_font)
         textPaint.textSize = 22f
     }
 
