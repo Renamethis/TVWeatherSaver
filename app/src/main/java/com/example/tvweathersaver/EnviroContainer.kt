@@ -2,13 +2,10 @@ package com.example.tvweathersaver
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Point
-import android.util.Log
-import android.widget.ListView
-import android.widget.TextView
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
 import androidx.constraintlayout.widget.ConstraintSet
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,58 +19,43 @@ class EnviroContainer(
     private val layout: ConstraintLayout,
     private val context: Context,
     private val scope: CoroutineScope,
-    private val backgroundColor: Color,
-    screenWidth: Int,
-    screenHeight: Int) {
-    private var width: Int = screenWidth;
-    private var height: Int = screenHeight;
+    private val backgroundColor: Color) {
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("DiscouragedApi")
     private fun drawView(previousId: Int, key: String, value: Double, unit: String, limits: JSONArray, index: Int) {
-        if (layout.findViewById<EnviroModuleView>(key.hashCode()) == null) {
+        if (layout.findViewById<EnviroView>(key.hashCode()) == null) {
             val drawableId = context.resources.getIdentifier(
                 key,
                 "drawable",
                 "com.example.tvweathersaver"
             );
-            val enviroView = EnviroModuleView(
+            val enviroView = EnviroView(
                 context,
                 drawableId,
                 key,
                 Pair<Int, Int>(limits.getInt(0), limits.getInt(1)),
                 value.toFloat(),
                 unit,
-                Point(0, 0),
                 backgroundColor
             )
             enviroView.id = key.hashCode()
-            var params = ConstraintLayout.LayoutParams(
+            val params = ConstraintLayout.LayoutParams(
                 ConstraintLayout.LayoutParams.WRAP_CONTENT,
                 ConstraintLayout.LayoutParams.WRAP_CONTENT,
             )
-            params.topToTop = layout.findViewById<TextView>(R.id.temperature_view).id
-//            params.bottomToTop = ConstraintSet.PARENT_ID;
-            params.startToStart = ConstraintSet.PARENT_ID;
-            params.endToEnd = ConstraintSet.PARENT_ID;
-
-////            params.topToTop = ConstraintSet.PARENT_ID;
-//            params.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
+            params.rightToRight = ConstraintSet.PARENT_ID;
+            params.leftToLeft = ConstraintSet.PARENT_ID;
+            params.bottomToBottom = ConstraintSet.PARENT_ID;
             if(previousId != -1) {
-//                set.connect(enviroView.id, ConstraintSet.BOTTOM, previousId, ConstraintSet.BOTTOM);
-//                set.connect(enviroView.id, ConstraintSet.TOP, previousId, ConstraintSet.TOP);
-                val prevParams: LayoutParams = layout.findViewById<EnviroModuleView>(previousId).layoutParams as LayoutParams
-                prevParams.startToEnd = enviroView.id
-//                prevParams.bottomToTop = enviroView.id
-//                params.topToBottom = previousId
-                params.endToStart = previousId
-//                params.rightToRight = previousId
-            } else {
-
+                val prevParams = layout.findViewById<EnviroView>(previousId).layoutParams as ConstraintLayout.LayoutParams
+                prevParams.leftToLeft = enviroView.id
+                params.rightToRight = previousId
             }
             enviroView.layoutParams = params
             layout.addView(enviroView);
         } else {
-            val existsView = layout.findViewById(key.hashCode()) as? EnviroModuleView
+            val existsView = layout.findViewById(key.hashCode()) as? EnviroView
             existsView?.updateView(value.toFloat())
         }
     }
