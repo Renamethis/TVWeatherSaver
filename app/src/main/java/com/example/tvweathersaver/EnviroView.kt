@@ -6,21 +6,22 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Point
+import android.graphics.RectF
+import android.os.Build
 import android.util.AttributeSet
 import android.view.View
-import androidx.core.content.res.getResourceIdOrThrow
-import android.graphics.RectF
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.res.getFloatOrThrow
 import androidx.core.content.res.getIntOrThrow
-import androidx.core.view.marginLeft
+import androidx.core.content.res.getResourceIdOrThrow
+
 
 fun Float.format(digits: Int) = "%.${digits}f".format(this)
 
 private const val imgSize: Int = 48;
 
-class EnviroModuleView : View {
+class EnviroView : View {
     private val replaceMap: HashMap<String, String> = hashMapOf<String, String>(
         "temperature" to "t",
         "dust" to "d",
@@ -31,7 +32,6 @@ class EnviroModuleView : View {
         "pressure" to "p",
         "reducing" to "co2",
     )
-    private var point: Point? = null
     private var icon: Bitmap? = null;
     private var name: String? = null;
     private var limits: Pair<Int, Int>? = null;
@@ -60,14 +60,13 @@ class EnviroModuleView : View {
     @RequiresApi(Build.VERSION_CODES.O)
     constructor(context: Context, iconResource: Int, name: String,
                 limits:Pair<Int, Int>, value: Float, unit: String,
-                point: Point, color: Color) : super(context) {
+                color: Color) : super(context) {
         init()
         icon = BitmapFactory.decodeResource(context.getResources(), iconResource);
         this.name = name
         this.limits = limits
         this.value = value
         this.unit = unit
-        this.point = point
         this.color = color
     }
     @RequiresApi(Build.VERSION_CODES.O)
@@ -98,25 +97,20 @@ class EnviroModuleView : View {
         textPaint.typeface = context.resources.getFont(R.font.maston_font)
         textPaint.textSize = 22f
     }
-
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val width = paddingLeft + imgSize*1.5 + paddingRight
-        val height = paddingTop + imgSize.toInt()*1.5 + paddingBottom
-        setMeasuredDimension(width.toInt(), height.toInt())
+        val width = paddingLeft + imgSize*2 + paddingRight
+        val height = paddingTop + imgSize*2 + paddingBottom
+        setMeasuredDimension(width, height)
     }
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
-        point ?: return
         icon ?: return
-        var x = point!!.x.toFloat(); y = point!!.y.toFloat();
-        x = 0.0f
-        y = 0.0f
+        val x = paddingLeft + imgSize*2/ 2f - imgSize
+        var y = paddingTop + imgSize*2 / 2f - imgSize
         textPaint.run {
             y -= ((descent() + ascent()) / 2)
+
             val rectBox = RectF(
-//                x - imgSize * 3 / 8f, y - imgSize * 3 / 8f,
-//                x + imgSize * 11 / 8,
-//                y + imgSize * 11 / 8
                 x, y, x + imgSize*1.5f, y + imgSize*1.5f
             );
             val backgroundPaint = Paint()
@@ -130,8 +124,8 @@ class EnviroModuleView : View {
             canvas.drawBitmap(icon!!, null, rectBox, null)
             val replacedName = replaceMap[name]
             canvas.drawText(
-                "$replacedName ${value?.format(2)} $unit",
-                (point!!.x - imgSize / 2).toFloat(), (point!!.y - imgSize / 2).toFloat(), this
+                "${value?.format(1)} $unit",
+                (x + imgSize/16).toFloat(), (y + imgSize*1.6).toFloat(), this
             )
             super.onDraw(canvas)
         }
