@@ -20,7 +20,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
-
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
@@ -54,7 +53,7 @@ class DreamActivity : DreamService() {
             findViewById(R.id.temperature_view))
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
-            startColor), layout.width, layout.height);
+            resources.getColor(com.example.library.R.color.startColor)))
     }
     override fun onDreamingStarted() {
         super.onDreamingStarted()
@@ -83,6 +82,7 @@ class DreamActivity : DreamService() {
             }
         }
         handler.postDelayed(weatherRunnable, 1000)
+        handler.postDelayed(enviroRunnable, 1000)
         handler.postDelayed(timeRunnable,100)
     }
     
