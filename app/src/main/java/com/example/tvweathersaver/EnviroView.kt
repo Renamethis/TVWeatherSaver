@@ -14,6 +14,8 @@ import android.graphics.RectF
 import androidx.compose.ui.graphics.Color
 import androidx.core.content.res.getFloatOrThrow
 import androidx.core.content.res.getIntOrThrow
+import androidx.core.view.marginLeft
+
 fun Float.format(digits: Int) = "%.${digits}f".format(this)
 
 private const val imgSize: Int = 48;
@@ -21,12 +23,12 @@ private const val imgSize: Int = 48;
 class EnviroModuleView : View {
     private val replaceMap: HashMap<String, String> = hashMapOf<String, String>(
         "temperature" to "t",
-        "dust" to "dust",
-        "humidity" to "hum",
-        "illumination" to "light",
+        "dust" to "d",
+        "humidity" to "h",
+        "illumination" to "l",
         "nh3" to "nh3",
         "oxidizing" to "ox",
-        "pressure" to "press",
+        "pressure" to "p",
         "reducing" to "co2",
     )
     private var point: Point? = null
@@ -89,28 +91,42 @@ class EnviroModuleView : View {
         textPaint.style = Paint.Style.FILL
         textPaint.textSize = 22f
     }
+
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = paddingLeft + imgSize*1.5 + paddingRight
+        val height = paddingTop + imgSize.toInt()*1.5 + paddingBottom
+        setMeasuredDimension(width.toInt(), height.toInt())
+    }
     @SuppressLint("DrawAllocation")
     override fun onDraw(canvas: Canvas) {
         point ?: return
         icon ?: return
-        val x = point!!.x.toFloat(); y = point!!.y.toFloat();
-        val rectBox = RectF(
-            x - imgSize*3/8f,  y - imgSize*3/8f,
-            x + imgSize*11/8,
-            y + imgSize*11/8
-        );
-        val backgroundPaint = Paint()
-        backgroundPaint.color = this.color.hashCode()
-        backgroundPaint.alpha = 128
-        canvas.drawRoundRect(rectBox, imgSize*1.5f, imgSize*1.5f, backgroundPaint)
-        rectBox.left = x
-        rectBox.top = y
-        rectBox.right = x + imgSize
-        rectBox.bottom = y + imgSize
-        canvas.drawBitmap(icon!!, null, rectBox, null)
-        val replacedName = replaceMap[name]
-        canvas.drawText("$replacedName ${value?.format(2)} $unit",
-            (point!!.x - imgSize/2).toFloat(), (point!!.y - imgSize/2).toFloat(), textPaint)
-        super.onDraw(canvas)
+        var x = point!!.x.toFloat(); y = point!!.y.toFloat();
+        x = 0.0f
+        y = 0.0f
+        textPaint.run {
+            y -= ((descent() + ascent()) / 2)
+            val rectBox = RectF(
+//                x - imgSize * 3 / 8f, y - imgSize * 3 / 8f,
+//                x + imgSize * 11 / 8,
+//                y + imgSize * 11 / 8
+                x, y, x + imgSize*1.5f, y + imgSize*1.5f
+            );
+            val backgroundPaint = Paint()
+            backgroundPaint.color = this.color.hashCode()
+            backgroundPaint.alpha = 128
+            canvas.drawRoundRect(rectBox, imgSize * 2.0f, imgSize * 2.0f, backgroundPaint)
+            rectBox.left = x + 0.25f* imgSize
+            rectBox.top = y + 0.25f* imgSize
+            rectBox.right = x + imgSize*1.25f
+            rectBox.bottom = y + imgSize*1.25f
+            canvas.drawBitmap(icon!!, null, rectBox, null)
+            val replacedName = replaceMap[name]
+            canvas.drawText(
+                "$replacedName ${value?.format(2)} $unit",
+                (point!!.x - imgSize / 2).toFloat(), (point!!.y - imgSize / 2).toFloat(), this
+            )
+            super.onDraw(canvas)
+        }
     }
 }
