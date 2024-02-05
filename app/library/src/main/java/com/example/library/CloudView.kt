@@ -5,13 +5,10 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.ColorFilter
-import android.graphics.LightingColorFilter
-import android.graphics.Paint
+import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.media.Image
 import android.util.AttributeSet
 import android.util.Log
 import android.view.ViewTreeObserver
@@ -19,21 +16,15 @@ import android.view.animation.AlphaAnimation
 import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
-import androidx.compose.ui.graphics.Color
+import androidx.annotation.ColorInt
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
-import androidx.core.graphics.alpha
-import androidx.core.graphics.blue
-import androidx.core.graphics.green
-import androidx.core.graphics.red
-import androidx.core.view.allViews
 import androidx.core.view.updateLayoutParams
 import java.util.*
 import kotlin.math.cos
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
-import kotlin.math.roundToInt
 import kotlin.random.Random
 
 
@@ -133,7 +124,7 @@ class CloudView : FrameLayout {
 
   private fun calculateBackgroundGradient(): GradientDrawable {
     val hours = Date().hours
-    darkFactor = 1f -  0.55f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
+    darkFactor = 1 - cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
     val gd = GradientDrawable(
       GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
         darkenColor(startColor, darkFactor),
@@ -142,13 +133,13 @@ class CloudView : FrameLayout {
     gd.cornerRadius = 0f
     return gd
   }
-  private fun darkenColor(color: Int, factor: Float): Int {
-    val a: Int = color.alpha
-    val r = (color.red * factor).roundToInt()
-    val g = (color.green * factor).roundToInt()
-    val b = (color.blue * factor).roundToInt()
-    return Color(a, r, g, b).hashCode()
+  @ColorInt fun darkenColor(@ColorInt color: Int, factor: Float): Int {
+    return Color.HSVToColor(FloatArray(3).apply {
+      Color.colorToHSV(color, this)
+      this[2] *= factor
+    })
   }
+
   private fun respawnClouds() {
     resetClouds(cloudCount)
     if (isAnimationRequested) forceStartAnimation()
