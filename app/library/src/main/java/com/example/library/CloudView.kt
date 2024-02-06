@@ -124,7 +124,7 @@ class CloudView : FrameLayout {
 
   private fun calculateBackgroundGradient(): GradientDrawable {
     val hours = Date().hours
-    darkFactor = 1 - cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
+    darkFactor = 1 - 0.9f * cos(Math.PI * hours.toDouble() / 24).pow(2.0).toFloat()
     val gd = GradientDrawable(
       GradientDrawable.Orientation.TOP_BOTTOM, intArrayOf(
         darkenColor(startColor, darkFactor),
@@ -439,7 +439,7 @@ class CloudView : FrameLayout {
   }
 
   companion object {
-    private const val TAG = "GGG CloudView"
+    private const val TAG = "TVWeatherSaver-CloudView"
     const val DEFAULT_PASS_TIME_MS = 10000
     const val DEFAULT_PASS_TIME_VARIANCE_MS = 2000
     const val DEFAULT_MINIMUM_CLOUD_SIZE = 300
