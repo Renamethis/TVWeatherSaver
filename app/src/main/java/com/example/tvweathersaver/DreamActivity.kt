@@ -48,7 +48,7 @@ class DreamActivity : DreamService() {
         isInteractive = true
         setContentView(R.layout.weather_view)
         fusedLocation = FusedLocation(applicationContext)
-        weatherModule = Weather(scope, findViewById(R.id.cloud_view),
+        weatherModule = Weather(applicationContext, scope, findViewById(R.id.cloud_view),
             findViewById(R.id.weather_view), findViewById(R.id.weather_description),
             findViewById(R.id.temperature_view))
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)

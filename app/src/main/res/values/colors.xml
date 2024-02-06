@@ -3,4 +3,6 @@
     <color name="highLimit">#D22B2B</color>
     <color name="lowLimit">#FF5733</color>
     <color name="underLimit">#DAF7A6</color>
+    <color name="cloudBasic">#FFFFF0</color>
+    <color name="cloudGray">#71797E</color>
 </resources>

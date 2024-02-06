@@ -1,13 +1,12 @@
 package com.example.tvweathersaver
 
-import android.util.Log
+import android.content.Context
 import android.widget.TextView
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
@@ -16,6 +15,7 @@ import kotlin.math.roundToInt
 
 @Suppress("NAME_SHADOWING")
 class Weather(
+    private val context: Context,
     private val scope: CoroutineScope,
     private val cloudView: CloudView,
     private val weatherView: WeatherView,
@@ -24,6 +24,7 @@ class Weather(
 ) {
     private val mutex = Mutex()
     private var isWeatherAnimating = false;
+    private lateinit var weatherDescriptionString: String;
     init {
         cloudView.setDefaults()
         cloudView.setMinSize(300)
@@ -34,6 +35,14 @@ class Weather(
         val wind = currentWeather?.getDouble("wind_speed")
         if (clouds != null) {
             if (clouds > 20 && !cloudView.isAnimating) { // TODO: Check if difference is enough to update animation
+                val loadedColor: Int;
+                if(weatherDescriptionString.contains("overcast"))
+                    loadedColor = context.resources.getColor(R.color.cloudGray)
+                else
+                    loadedColor = context.resources.getColor(R.color.cloudBasic)
+                currentWeather?.getDouble("uvi")?.let {
+                    cloudView.setColor(loadedColor, it);
+                }
                 cloudView.setPassTimeVariance(
                     (20000.0 * (1.0 - (wind?.div(20.0) ?: 1.0))).toInt()
                 );
@@ -55,7 +64,8 @@ class Weather(
         weather?.let {
             for (it in weather) {
                 val weatherMain = it.getString("main")
-                weatherDescriptionView.text = it.getString("description")
+                weatherDescriptionString = it.getString("description")
+                weatherDescriptionView.text = weatherDescriptionString
                 when(weatherMain) {
                     "Snow" ->
                         if (!isWeatherAnimating || weatherView.precipType != PrecipType.SNOW) {
@@ -84,8 +94,9 @@ class Weather(
             val response = withContext(Dispatchers.IO) { HttpClient.get(url) }
             val currentWeather = response?.getJSONObject("current")
             val region = response?.getString("timezone")?.split("/")?.get(1) ?: ""
+            // Order is important
+            updateWeather(currentWeather, region);
             updateClouds(currentWeather);
-            updateWeather(currentWeather, region)
             mutex.unlock();
         }
     }
