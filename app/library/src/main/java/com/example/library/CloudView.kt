@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
 import android.view.ViewTreeObserver
@@ -17,6 +18,7 @@ import android.view.animation.LinearInterpolator
 import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.annotation.ColorInt
+import androidx.annotation.RequiresApi
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
 import androidx.core.view.updateLayoutParams
@@ -109,8 +111,13 @@ class CloudView : FrameLayout {
     imageDrawable = null
     requestedSizeRange = DEFAULT_MINIMUM_CLOUD_SIZE..DEFAULT_MAXIMUM_CLOUD_SIZE
     setCloudCount(DEFAULT_CLOUD_COUNT)
-
-    if (wasAnimating) startAnimation()
+  }
+  @RequiresApi(Build.VERSION_CODES.O)
+  fun setColor(color: Int, uvi: Double) {
+    for(cloud in imageViews) {
+      val uviFactor: Float = 1.0f - (uvi.toFloat()/13.0f);
+      cloud.setColorFilter(darkenColor(color, uviFactor), PorterDuff.Mode.SRC_ATOP)
+    }
   }
 
   /**
@@ -119,7 +126,6 @@ class CloudView : FrameLayout {
   var cloudCount: Int = DEFAULT_CLOUD_COUNT
     set(value) {
       field = value
-      if (isDrawn) respawnClouds()
     }
 
   private fun calculateBackgroundGradient(): GradientDrawable {
@@ -133,7 +139,7 @@ class CloudView : FrameLayout {
     gd.cornerRadius = 0f
     return gd
   }
-  @ColorInt fun darkenColor(@ColorInt color: Int, factor: Float): Int {
+  @ColorInt private fun darkenColor(@ColorInt color: Int, factor: Float): Int {
     return Color.HSVToColor(FloatArray(3).apply {
       Color.colorToHSV(color, this)
       this[2] *= factor
@@ -155,13 +161,11 @@ class CloudView : FrameLayout {
       cloud.y = height * Random.nextFloat() - cloud.height
       cloud.id = i
       cloud.setImageResource(R.drawable.ic_cloud)
-      cloud.setColorFilter(darkenColor(resources.getColor(R.color.cloudBasic), darkFactor), PorterDuff.Mode.MULTIPLY)
       val dimen = Random.nextInt(requestedSizeRange.first, requestedSizeRange.last)
       addView(cloud, LayoutParams(dimen, dimen))
       imageViews.add(cloud)
     }
   }
-
   /**
    * The maximum size of a cloud, in pixels. Clouds are randomly sized between [minCloudSize] and
    * maxCloudSize. Note that new cloud sizes are calculated and shown immediately.
@@ -219,7 +223,6 @@ class CloudView : FrameLayout {
     viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
       override fun onGlobalLayout() {
         if (isDrawn) {
-          respawnClouds()
           viewTreeObserver.removeOnGlobalLayoutListener(this)
         }
       }
