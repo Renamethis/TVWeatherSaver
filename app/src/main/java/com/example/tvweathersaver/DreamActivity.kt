@@ -104,8 +104,7 @@ class DreamActivity : DreamService() {
         val dt = Date()
         val hours = formatTime(dt.hours)
         val minutes = formatTime(dt.minutes)
-        val seconds = formatTime(dt.seconds)
-        val curTime = "$hours:$minutes:$seconds"
+        val curTime = "$hours:$minutes"
         txtCurrentTime.text = curTime
     }
     private fun formatTime(value: Int) : String {
