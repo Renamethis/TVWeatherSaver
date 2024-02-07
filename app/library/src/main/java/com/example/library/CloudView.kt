@@ -21,6 +21,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.RequiresApi
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
+import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import java.util.*
 import kotlin.math.cos
@@ -104,7 +105,7 @@ class CloudView : FrameLayout {
    */
   fun setDefaults() {
     val wasAnimating = isAnimationRequested
-    stopAnimationsUntilRespawn()
+//    stopAnimationsUntilRespawn()
 
     imageResId = R.drawable.ic_cloud
     imageBitmap = null
@@ -112,11 +113,13 @@ class CloudView : FrameLayout {
     requestedSizeRange = DEFAULT_MINIMUM_CLOUD_SIZE..DEFAULT_MAXIMUM_CLOUD_SIZE
     setCloudCount(DEFAULT_CLOUD_COUNT)
   }
+
   @RequiresApi(Build.VERSION_CODES.O)
   fun setColor(color: Int, uvi: Double) {
     for(cloud in imageViews) {
       val uviFactor: Float = 1.0f - (uvi.toFloat()/13.0f);
       cloud.setColorFilter(darkenColor(color, uviFactor), PorterDuff.Mode.SRC_ATOP)
+      cloud.isVisible = true
     }
   }
 
@@ -162,6 +165,7 @@ class CloudView : FrameLayout {
       cloud.id = i
       cloud.setImageResource(R.drawable.ic_cloud)
       val dimen = Random.nextInt(requestedSizeRange.first, requestedSizeRange.last)
+      cloud.isVisible = false
       addView(cloud, LayoutParams(dimen, dimen))
       imageViews.add(cloud)
     }
