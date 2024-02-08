@@ -63,9 +63,9 @@ class DreamActivity : DreamService() {
                 handler.removeCallbacksAndMessages(this)
                 updateTime()
                 if(!handler.hasCallbacks(enviroRunnable))
-                    handler.postDelayed(enviroRunnable, 50000)
+                    handler.postDelayed(enviroRunnable, 100000)
                 if(!handler.hasCallbacks(weatherRunnable))
-                    handler.postDelayed(weatherRunnable, 100000)
+                    handler.postDelayed(weatherRunnable, 300000)
                 handler.postDelayed(this, 100)
             }
         }
@@ -81,9 +81,9 @@ class DreamActivity : DreamService() {
                 enviroContainer.update()
             }
         }
-        handler.postDelayed(weatherRunnable, 1000)
+        handler.postDelayed(weatherRunnable, 0)
+        handler.postDelayed(timeRunnable,0)
         handler.postDelayed(enviroRunnable, 1000)
-        handler.postDelayed(timeRunnable,100)
     }
     
     private fun updateWeatherAndClouds(){
