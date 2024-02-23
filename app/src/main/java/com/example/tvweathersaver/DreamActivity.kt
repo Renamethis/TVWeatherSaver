@@ -20,10 +20,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
 
+
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
-class DreamActivity : DreamService() {
+    class DreamActivity : DreamService() {
     private lateinit var scope: CoroutineScope;
     private lateinit var fusedLocation: FusedLocation;
     private lateinit var weatherModule: Weather;
@@ -35,7 +36,12 @@ class DreamActivity : DreamService() {
         directory = "/assets"
         filename = "env"
     }
+    init {
+    }
 
+    override fun onCreate() {
+        super.onCreate()
+    }
     @SuppressLint("AppBundleLocaleChanges")
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onAttachedToWindow() {
@@ -91,9 +97,8 @@ class DreamActivity : DreamService() {
         location?.addOnSuccessListener {
             if (it != null) {
                 weatherModule.update(
-                    environment["BACKEND_URL"] + "?lat=" +
-                            it.latitude + "&lon=" + it.longitude + "&appid=" + environment["API_KEY"]
-                )
+                applicationContext.getString(R.string.enviro_backend_url) + "/load_weather/" + it.latitude + "/" +it.longitude,
+                environment["BACKEND_URL"] + "?lat=" + it.latitude + "&lon=" + it.longitude + "&appid=" + environment["API_KEY"])
             } else {
                 // TODO: Proceed delay
             }

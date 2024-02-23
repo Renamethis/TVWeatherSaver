@@ -61,7 +61,7 @@ class EnviroContainer(
     }
     fun update() {
         val job: Job = scope.launch {
-            val response = withContext(Dispatchers.IO) { HttpClient.get(context.getString(R.string.enviro_backend_url)) }
+            val response = withContext(Dispatchers.IO) { HttpClient.get(context.getString(R.string.enviro_backend_url) + "/get_current_state") }
             if(response != null) {
                 var i: Int = 0;
                 var prevId: Int = -1;

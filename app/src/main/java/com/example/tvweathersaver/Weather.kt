@@ -87,11 +87,13 @@ class Weather(
             }
         }
     }
-    fun update(url: String) {
+    fun update(defaultUrl: String, directUrl: String) {
         if(!mutex.tryLock())
             return
         scope.launch {
-            val response = withContext(Dispatchers.IO) { HttpClient.get(url) }
+            var response = withContext(Dispatchers.IO) { HttpClient.get(defaultUrl) }
+            if(response == null)
+                response = withContext(Dispatchers.IO) { HttpClient.get(directUrl) }
             val currentWeather = response?.getJSONObject("current")
             val region = response?.getString("timezone")?.split("/")?.get(1) ?: ""
             // Order is important
