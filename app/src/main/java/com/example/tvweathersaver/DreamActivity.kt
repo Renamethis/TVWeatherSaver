@@ -56,7 +56,7 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
         fusedLocation = FusedLocation(applicationContext)
         weatherModule = Weather(applicationContext, scope, findViewById(R.id.cloud_view),
             findViewById(R.id.weather_view), findViewById(R.id.weather_description),
-            findViewById(R.id.temperature_view))
+            findViewById(R.id.temperature_view), environment["API_KEY"])
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
             resources.getColor(com.example.library.R.color.startColor)))
@@ -92,13 +92,12 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
         handler.postDelayed(enviroRunnable, 1000)
     }
     
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun updateWeatherAndClouds(){
         val location = fusedLocation.getLocationTask();
         location?.addOnSuccessListener {
             if (it != null) {
-                weatherModule.update(
-                applicationContext.getString(R.string.enviro_backend_url) + "/load_weather/" + it.latitude + "/" +it.longitude,
-                environment["BACKEND_URL"] + "?lat=" + it.latitude + "&lon=" + it.longitude + "&appid=" + environment["API_KEY"])
+                weatherModule.update(it)
             } else {
                 // TODO: Proceed delay
             }

@@ -1,7 +1,10 @@
 package com.example.tvweathersaver
 
 import android.content.Context
+import android.location.Location
+import android.os.Build
 import android.widget.TextView
+import androidx.annotation.RequiresApi
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
 import com.github.matteobattilana.weather.WeatherView
@@ -21,7 +24,10 @@ class Weather(
     private val weatherView: WeatherView,
     private val weatherDescriptionView: TextView,
     private val regionTemperatureView: TextView,
+    private val apiKey: String
 ) {
+    private var defaultUrl = context.getString(R.string.enviro_backend_url)
+    private var directUrl = context.getString(R.string.openweathermap_url) + "?appid=" + apiKey
     private val mutex = Mutex()
     private var isWeatherAnimating = false;
     private lateinit var weatherDescriptionString: String;
@@ -30,6 +36,7 @@ class Weather(
         cloudView.setMinSize(300)
         cloudView.stopAnimations()
     }
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun updateClouds(currentWeather: JSONObject?) {
         val clouds = currentWeather?.getInt("clouds")
         val wind = currentWeather?.getDouble("wind_speed")
@@ -87,13 +94,14 @@ class Weather(
             }
         }
     }
-    fun update(defaultUrl: String, directUrl: String) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun update(loc: Location) {
         if(!mutex.tryLock())
             return
         scope.launch {
-            var response = withContext(Dispatchers.IO) { HttpClient.get(defaultUrl) }
+            var response = withContext(Dispatchers.IO) { HttpClient.get(defaultUrl + "/load_weather/" + loc.latitude + "/" + loc.longitude) }
             if(response == null)
-                response = withContext(Dispatchers.IO) { HttpClient.get(directUrl) }
+                response = withContext(Dispatchers.IO) { HttpClient.get(directUrl + "&lat=" + loc.latitude + "&lon=" + loc.longitude) }
             val currentWeather = response?.getJSONObject("current")
             val region = response?.getString("timezone")?.split("/")?.get(1) ?: ""
             // Order is important
