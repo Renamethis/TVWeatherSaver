@@ -29,10 +29,9 @@ private fun readDataFromStream(responseCode: Int, inputStream: InputStream): JSO
     }
     return null;
 }
-
 class HttpClient {
     companion object {
-        suspend fun get(stringUrl: String): JSONObject? {
+        suspend fun get(stringUrl: String, authentication:String? = null): JSONObject? {
             val url = URL(stringUrl);
             with(url.openConnection() as HttpURLConnection) {
                 val policy = ThreadPolicy.Builder().permitAll().build()
@@ -40,6 +39,8 @@ class HttpClient {
                 requestMethod = "GET"
                 connectTimeout = 2000;
                 setRequestProperty("charset", "utf-8")
+                if(authentication != null)
+                    setRequestProperty("Authorization", authentication)
                 try {
                     return readDataFromStream(responseCode, inputStream)
                 } catch (_: ConnectException) {
@@ -54,7 +55,7 @@ class HttpClient {
                 }
             }
         }
-        fun post(stringUrl: String, body: JSONObject): JSONObject? {
+        fun post(stringUrl: String, body: JSONObject, authentication:String? = null): JSONObject? {
             val url = URL(stringUrl);
             val byteBody: ByteArray = body.toString().toByteArray(StandardCharsets.UTF_8)
             with(url.openConnection() as HttpURLConnection) {
@@ -63,6 +64,8 @@ class HttpClient {
                 setRequestProperty("charset", "utf-8")
                 setRequestProperty("Content-length", byteBody.size.toString())
                 setRequestProperty("Content-Type", "application/json")
+                if(authentication != null)
+                    setRequestProperty("Authorization", authentication)
                 try {
                     val outputStream: DataOutputStream = DataOutputStream(outputStream)
                     outputStream.write(byteBody)
