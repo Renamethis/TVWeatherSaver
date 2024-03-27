@@ -16,6 +16,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.util.Date
@@ -31,6 +33,7 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
     private lateinit var enviroContainer: EnviroContainer;
     private lateinit var weatherRunnable: Runnable;
     private lateinit var enviroRunnable: Runnable;
+    private var weatherToken: String? = null
     private val handler = Handler()
     private val environment = dotenv {
         directory = "/assets"
@@ -53,13 +56,27 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
         isFullscreen = true
         isInteractive = true
         setContentView(R.layout.weather_view)
+        scope.launch {
+            val response = withContext(Dispatchers.IO) {
+                HttpClient.post(
+                    applicationContext.getString(R.string.enviro_backend_url) + "/auth/login",
+                    JSONObject(
+                        mapOf(
+                            "nickname" to "WeatherAdmin",
+                            "password" to environment["API_PASSWORD"]
+                        )
+                    )
+                )
+            }
+            weatherToken = response?.getString("auth_token")
+        }
         fusedLocation = FusedLocation(applicationContext)
         weatherModule = Weather(applicationContext, scope, findViewById(R.id.cloud_view),
             findViewById(R.id.weather_view), findViewById(R.id.weather_description),
-            findViewById(R.id.temperature_view), environment["API_KEY"])
+            findViewById(R.id.temperature_view), environment["API_KEY"], weatherToken)
         val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
         enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
-            resources.getColor(com.example.library.R.color.startColor)))
+            resources.getColor(com.example.library.R.color.startColor)), weatherToken)
     }
     override fun onDreamingStarted() {
         super.onDreamingStarted()
