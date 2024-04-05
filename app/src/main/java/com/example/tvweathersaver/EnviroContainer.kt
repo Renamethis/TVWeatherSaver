@@ -19,7 +19,8 @@ class EnviroContainer(
     private val layout: ConstraintLayout,
     private val context: Context,
     private val scope: CoroutineScope,
-    private val backgroundColor: Color) {
+    private val backgroundColor: Color,
+    private val weatherToken: String?) {
 
     @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("DiscouragedApi")
@@ -61,7 +62,8 @@ class EnviroContainer(
     }
     fun update() {
         val job: Job = scope.launch {
-            val response = withContext(Dispatchers.IO) { HttpClient.get(context.getString(R.string.enviro_backend_url) + "/get_current_state") }
+            val response = withContext(Dispatchers.IO) { HttpClient.get(context.getString(R.string.enviro_backend_url) + "/get_current_state",
+                "Bearer $weatherToken") }
             if(response != null) {
                 var i: Int = 0;
                 var prevId: Int = -1;

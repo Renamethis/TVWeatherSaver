@@ -67,10 +67,15 @@ class HttpClient {
                 if(authentication != null)
                     setRequestProperty("Authorization", authentication)
                 try {
-                    val outputStream: DataOutputStream = DataOutputStream(outputStream)
-                    outputStream.write(byteBody)
-                    outputStream.flush()
-                } catch (exception: Exception) {
+                    return readDataFromStream(responseCode, inputStream)
+                } catch (_: ConnectException) {
+                    Log.i("TVErrorLog", "Can't connect to server")
+                    return null;
+                } catch (_: SocketTimeoutException) {
+                    Log.i("TVErrorLog", "Connection time out")
+                    return null;
+                } catch(_: java.io.IOException) {
+                    Log.i("TVErrorLog", "IO Exception")
                     return null;
                 }
                 return readDataFromStream(responseCode, inputStream)
