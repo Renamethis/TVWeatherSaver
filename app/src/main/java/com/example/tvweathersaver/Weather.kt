@@ -4,6 +4,7 @@ import android.content.Context
 import android.location.Location
 import android.os.Build
 import android.widget.TextView
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import com.example.library.CloudView
 import com.github.matteobattilana.weather.PrecipType
@@ -13,8 +14,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
 import org.json.JSONObject
 import kotlin.math.roundToInt
+
 
 @Suppress("NAME_SHADOWING")
 class Weather(
@@ -32,6 +35,7 @@ class Weather(
     private val mutex = Mutex()
     private var isWeatherAnimating = false;
     private lateinit var weatherDescriptionString: String;
+    private var showedAlerts: MutableList<JSONObject> = mutableListOf()
     init {
         cloudView.setDefaults()
         cloudView.setMinSize(300)
@@ -95,6 +99,18 @@ class Weather(
             }
         }
     }
+    private fun updateAlerts(alerts: JSONArray) {
+        for (i in 0 until alerts.length()) {
+            val alert = alerts.getJSONObject(i)
+            if(alert !in showedAlerts) {
+                val description = alert.getString("description")
+                val event = alert.getString("event")
+                val sender = alert.getString("sender_name")
+                Toast.makeText(context, "$sender: $description - $event", Toast.LENGTH_LONG).show()
+                showedAlerts.add(alert)
+            }
+        }
+    }
     @RequiresApi(Build.VERSION_CODES.O)
     fun update(loc: Location) {
         if(!mutex.tryLock())
@@ -106,10 +122,14 @@ class Weather(
             if(response == null)
                 response = withContext(Dispatchers.IO) { HttpClient.get(directUrl + "&lat=" + loc.latitude + "&lon=" + loc.longitude) }
             val currentWeather = response?.getJSONObject("current")
+            val alerts = response?.getJSONArray("alerts")
             val region = response?.getString("timezone")?.split("/")?.get(1) ?: ""
             // Order is important
             updateWeather(currentWeather, region);
             updateClouds(currentWeather);
+            if(alerts != null) {
+                updateAlerts(alerts)
+            }
             mutex.unlock();
         }
     }
