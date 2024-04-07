@@ -26,7 +26,7 @@ import java.util.Date
 operator fun JSONArray.iterator(): Iterator<JSONObject>
         = (0 until length()).asSequence().map { get(it) as JSONObject }.iterator()
 
-    class DreamActivity : DreamService() {
+class DreamActivity : DreamService() {
     private lateinit var scope: CoroutineScope;
     private lateinit var fusedLocation: FusedLocation;
     private lateinit var weatherModule: Weather;
@@ -45,6 +45,7 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
     override fun onCreate() {
         super.onCreate()
     }
+    @RequiresApi(Build.VERSION_CODES.N)
     @SuppressLint("AppBundleLocaleChanges")
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onAttachedToWindow() {
@@ -69,14 +70,23 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
                 )
             }
             weatherToken = response?.getString("auth_token")
+            if(weatherToken == null)
+                weatherToken = "null"
         }
-        fusedLocation = FusedLocation(applicationContext)
-        weatherModule = Weather(applicationContext, scope, findViewById(R.id.cloud_view),
-            findViewById(R.id.weather_view), findViewById(R.id.weather_description),
-            findViewById(R.id.temperature_view), environment["API_KEY"], weatherToken)
-        val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
-        enviroContainer = EnviroContainer(layout, applicationContext, scope, Color(
-            resources.getColor(com.example.library.R.color.startColor)), weatherToken)
+        job.invokeOnCompletion {
+            fusedLocation = FusedLocation(applicationContext)
+            weatherModule = Weather(
+                applicationContext, scope, findViewById(R.id.cloud_view),
+                findViewById(R.id.weather_view), findViewById(R.id.weather_description),
+                findViewById(R.id.temperature_view), environment["API_KEY"], weatherToken
+            )
+            val layout = findViewById<ConstraintLayout>(R.id.dream_layout)
+            enviroContainer = EnviroContainer(
+                layout, applicationContext, scope, Color(
+                    resources.getColor(com.example.library.R.color.startColor)
+                ), weatherToken
+            )
+        }
     }
     override fun onDreamingStarted() {
         super.onDreamingStarted()
@@ -95,18 +105,20 @@ operator fun JSONArray.iterator(): Iterator<JSONObject>
         weatherRunnable = object: Runnable {
             override fun run() {
                 handler.removeCallbacksAndMessages(this)
-                updateWeatherAndClouds()
+                if(weatherToken != null)
+                    updateWeatherAndClouds()
             }
         }
         enviroRunnable = object : Runnable {
             override fun run() {
                 handler.removeCallbacksAndMessages(this)
-                enviroContainer.update()
+                if(weatherToken != null)
+                    enviroContainer.update()
             }
         }
-        handler.postDelayed(weatherRunnable, 0)
-        handler.postDelayed(timeRunnable,0)
-        handler.postDelayed(enviroRunnable, 1000)
+        handler.postDelayed(weatherRunnable, 1000)
+        handler.postDelayed(timeRunnable,1000)
+        handler.postDelayed(enviroRunnable, 2000)
     }
     
     @RequiresApi(Build.VERSION_CODES.O)

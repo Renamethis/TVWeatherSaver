@@ -24,7 +24,8 @@ class Weather(
     private val weatherView: WeatherView,
     private val weatherDescriptionView: TextView,
     private val regionTemperatureView: TextView,
-    private val apiKey: String
+    private val apiKey: String,
+    private val weatherToken: String?,
 ) {
     private var defaultUrl = context.getString(R.string.enviro_backend_url)
     private var directUrl = context.getString(R.string.openweathermap_url) + "?appid=" + apiKey
@@ -99,7 +100,9 @@ class Weather(
         if(!mutex.tryLock())
             return
         scope.launch {
-            var response = withContext(Dispatchers.IO) { HttpClient.get(defaultUrl + "/load_weather/" + loc.latitude + "/" + loc.longitude) }
+            var response = withContext(Dispatchers.IO) { HttpClient.get(
+                defaultUrl + "/load_weather/" + loc.latitude + "/" + loc.longitude, weatherToken
+            ) }
             if(response == null)
                 response = withContext(Dispatchers.IO) { HttpClient.get(directUrl + "&lat=" + loc.latitude + "&lon=" + loc.longitude) }
             val currentWeather = response?.getJSONObject("current")
