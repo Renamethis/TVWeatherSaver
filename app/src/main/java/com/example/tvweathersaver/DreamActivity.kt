@@ -57,7 +57,7 @@ class DreamActivity : DreamService() {
         isFullscreen = true
         isInteractive = true
         setContentView(R.layout.weather_view)
-        scope.launch {
+        val job = scope.launch {
             val response = withContext(Dispatchers.IO) {
                 HttpClient.post(
                     applicationContext.getString(R.string.enviro_backend_url) + "/auth/login",
